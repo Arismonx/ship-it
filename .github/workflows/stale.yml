@@ -1,0 +1,73 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Grégoire Favreau
+#
+# Housekeeping (docs/design/workflows.md §9), conservative on purpose, with the
+# lifecycle/ labels of our taxonomy (docs/design/git-github-standards.md):
+# - stale: an issue without activity for 90 days gets lifecycle/stale and a
+#   comment, then is closed 30 days later ("not planned"). Pull requests get
+#   the label and the comment but are never closed by a bot. lifecycle/frozen,
+#   lifecycle/active, assigned items, milestones and drafts are exempt; any
+#   activity removes the label.
+# - lock: conversations closed for a year are locked, so that new comments go
+#   to new issues.
+name: stale
+
+on:
+  schedule:
+    - cron: "37 4 * * *"
+  workflow_dispatch:
+
+# Nothing by default; each job asks for what it needs.
+permissions: {}
+
+concurrency:
+  group: stale
+  cancel-in-progress: true
+
+jobs:
+  stale:
+    name: stale
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      issues: write # label, comment on and close stale issues
+      pull-requests: write # label and comment on stale pull requests
+    steps:
+      - uses: actions/stale@4391f3da665fdf50b6810c1a66712fb9ba21aa93 # v11.0.0
+        with:
+          days-before-stale: 90
+          days-before-issue-close: 30
+          days-before-pr-close: -1
+          stale-issue-label: lifecycle/stale
+          stale-pr-label: lifecycle/stale
+          exempt-issue-labels: lifecycle/frozen,lifecycle/active
+          exempt-pr-labels: lifecycle/frozen,lifecycle/active
+          exempt-all-milestones: true
+          exempt-all-assignees: true
+          exempt-draft-pr: true
+          close-issue-reason: not_planned
+          stale-issue-message: >
+            No activity for 90 days: this issue is now lifecycle/stale and will
+            be closed in 30 days. Comment to keep it open, or a maintainer can
+            add lifecycle/frozen.
+          stale-pr-message: >
+            No activity for 90 days: this pull request is now lifecycle/stale.
+            It will not be closed automatically; push or comment to remove the
+            label.
+          operations-per-run: 60
+
+  lock:
+    name: lock
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      issues: write # lock closed issues
+      pull-requests: write # lock closed pull requests
+    steps:
+      - uses: dessant/lock-threads@89ae32b08ed1a541efecbab17912962a5e38981c # v6.0.2
+        with:
+          process-only: issues,prs
+          issue-inactive-days: 365
+          pr-inactive-days: 365
+          exclude-any-issue-labels: lifecycle/frozen
+          exclude-any-pr-labels: lifecycle/frozen

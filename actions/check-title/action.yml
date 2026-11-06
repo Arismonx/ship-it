@@ -1,0 +1,133 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Grégoire Favreau
+#
+# Checks a pull request title (or any commit header) with ship-it's own
+# parser, `ship check title` (docs/reference/conventions.md). See README.md here and
+# docs/design/workflows.md §6. go run ./tools/gen copies it, without the source
+# mode, to build/ship-it-action/ (the Marketplace repository GregoireF/ship-it-action).
+name: ship-it check title
+description: Check a pull request title against ship-it's commit conventions (gitmoji + Conventional Commits).
+author: Grégoire Favreau
+branding:
+  icon: check-circle
+  color: blue
+
+inputs:
+  title:
+    description: The title to check, usually github.event.pull_request.title.
+    required: true
+  version:
+    description: >
+      The ship release to use, for example "1.2.0" or "v1.2.0": its archive is
+      downloaded from the GitHub release and checked against checksums.txt.
+      "source" builds ship from the source of this action's own commit
+      (needs Go, installed with actions/setup-go).
+    required: true
+  verify-attestation:
+    description: >
+      "true" also checks the archive's build provenance with
+      `gh attestation verify` (signed by ship-it's release workflow), using
+      the job's token. Off by default until tested on the first public release.
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    # marketplace:omit-begin (source mode: only inside ship-it's own repository)
+    - name: set up Go
+      if: inputs.version == 'source'
+      uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      with:
+        go-version-file: ${{ github.action_path }}/../../go.mod
+        cache: false
+
+    # The action's directory is inside a full checkout of ship-it at the
+    # action's commit: build from there, not from the caller's workspace.
+    - name: build ship
+      id: build
+      if: inputs.version == 'source'
+      shell: bash
+      working-directory: ${{ github.action_path }}/../..
+      run: |
+        set -euo pipefail
+        exe=""
+        if [ "$RUNNER_OS" = Windows ]; then exe=".exe"; fi
+        dir="$RUNNER_TEMP/ship-check-title"
+        mkdir -p "$dir"
+        go build -trimpath -o "$dir/ship$exe" ./cmd/ship
+        echo "path=$dir/ship$exe" >> "$GITHUB_OUTPUT"
+
+    # marketplace:omit-end
+    - name: download ship
+      id: download
+      if: inputs.version != 'source'
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
+        # The version names a file and a URL: accept X.Y.Z[-pre] only.
+        if ! [[ "$VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+          echo "::error::version must be X.Y.Z, vX.Y.Z or source, got: $VERSION"
+          exit 1
+        fi
+        version="${VERSION#v}"
+        case "$RUNNER_OS" in
+          Linux) os=linux ;;
+          macOS) os=darwin ;;
+          Windows) os=windows ;;
+          *) echo "::error::unsupported runner OS: $RUNNER_OS"; exit 1 ;;
+        esac
+        case "$RUNNER_ARCH" in
+          X64) arch=amd64 ;;
+          ARM64) arch=arm64 ;;
+          *) echo "::error::unsupported runner architecture: $RUNNER_ARCH"; exit 1 ;;
+        esac
+        ext="tar.gz"; exe=""
+        if [ "$os" = windows ]; then ext="zip"; exe=".exe"; fi
+        archive="ship_${version}_${os}_${arch}.${ext}"
+        base="https://github.com/GregoireF/ship-it/releases/download/v${version}"
+        dir="$RUNNER_TEMP/ship-check-title"
+        mkdir -p "$dir"
+        cd "$dir"
+        curl --proto '=https' --tlsv1.2 -fsSL -o "$archive" "$base/$archive"
+        curl --proto '=https' --tlsv1.2 -fsSL -o checksums.txt "$base/checksums.txt"
+        # Only the line of this archive: a missing line is an error.
+        awk -v f="$archive" '$2 == f' checksums.txt > expected.txt
+        if [ ! -s expected.txt ]; then
+          echo "::error::$archive is not listed in checksums.txt"
+          exit 1
+        fi
+        if command -v sha256sum > /dev/null; then
+          sha256sum -c expected.txt
+        else
+          shasum -a 256 -c expected.txt
+        fi
+        if [ "$ext" = zip ]; then
+          if command -v unzip > /dev/null; then unzip -q -o "$archive"; else 7z x -y "$archive" > /dev/null; fi
+        else
+          tar -xzf "$archive"
+        fi
+        echo "path=$dir/ship$exe" >> "$GITHUB_OUTPUT"
+        echo "archive=$dir/$archive" >> "$GITHUB_OUTPUT"
+
+    # Provenance: the archive was built by ship-it's release workflow.
+    - name: verify attestation
+      if: inputs.version != 'source' && inputs.verify-attestation == 'true'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        ARCHIVE: ${{ steps.download.outputs.archive }}
+      run: |
+        gh attestation verify "$ARCHIVE" --repo GregoireF/ship-it \
+          --signer-workflow GregoireF/ship-it/.github/workflows/release.yml
+
+    # The title is untrusted input: it reaches the command through the
+    # environment, never through the script text.
+    - name: check title
+      shell: bash
+      env:
+        SHIP: ${{ steps.build.outputs.path || steps.download.outputs.path }}
+        TITLE: ${{ inputs.title }}
+      run: '"$SHIP" check title -- "$TITLE"'

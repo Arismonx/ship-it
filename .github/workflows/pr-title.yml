@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Grégoire Favreau
+#
+# Dogfooding (docs/design/workflows.md §4): the pull request title is checked by
+# ship-it's own parser, so the squash commit follows docs/reference/conventions.md.
+name: pr-title
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+# Nothing by default; the job asks for what it needs (zizmor: excessive-permissions).
+permissions: {}
+
+concurrency:
+  group: pr-title-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  title:
+    name: title
+    # Dependabot writes "bump x from 1.2.3 to 1.2.4", often longer than the
+    # 50-character subject: its pull requests are reviewed on their content.
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Our own reusable action (actions/check-title), built from this commit:
+      # it passes the title (untrusted input) through the environment, never
+      # into a script. Other repositories use it with a released version.
+      # `./` rather than the newer `$/` self-repository syntax: actionlint
+      # v1.7.12 rejects `$/`; the checkout above provides the action.
+      - name: check title
+        uses: ./actions/check-title # zizmor: ignore[self-repository]
+        with:
+          title: ${{ github.event.pull_request.title }}
+          version: source

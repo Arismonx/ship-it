@@ -1,0 +1,71 @@
+# Contributing to ship-it
+
+Thanks for your interest! ship-it is young: open an issue before a large change, so that we agree on the approach before you write the code.
+
+Everyone taking part follows the [code of conduct](CODE_OF_CONDUCT.md). Questions go to [Discussions](https://github.com/GregoireF/ship-it/discussions) (see [SUPPORT.md](SUPPORT.md)); vulnerabilities never go in a public issue (see [SECURITY.md](SECURITY.md)).
+
+## Before you start
+- Read [ARCHITECTURE.md](ARCHITECTURE.md) (layers and import rules, enforced by `internal/archtest`) and the ADRs in [docs/adr/](docs/adr/) that touch your change.
+- [ROADMAP.md](ROADMAP.md) lists what is planned; open an issue to discuss what is not decided yet.
+- AI agents also read [AGENTS.md](AGENTS.md).
+
+## Set up
+
+### Dev container (recommended)
+The repository has a dev container (`.devcontainer/`): Go from `go.mod`, Node.js 22 (as the extension CI job), git, and the recommended VS Code extensions. After creation it runs `go mod download` and `npm ci` in `extensions/vscode`.
+
+- **GitHub Codespaces**: "Code" → "Codespaces" → "Create codespace on main".
+- **Locally**: VS Code with the [Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers) extension and Docker, then "Dev Containers: Reopen in Container".
+
+### On your machine
+Go (the version of `go.mod`; with the default `GOTOOLCHAIN=auto`, any Go 1.21+ downloads it), git 2.43 or later, and Node.js 22 for the VS Code extension. Windows, macOS and Linux are all supported: CI runs on the three.
+
+## Check your change
+```sh
+go run ./tools/check                  # what a pull request must pass: gofmt, vet, staticcheck, license headers, tests, govulncheck
+go run ./tools/check -race            # with the race detector (needs cgo)
+go run ./tools/check -fuzztime=10s    # also fuzz every target briefly
+```
+`tools/check` is the same program CI runs, so a green run on your machine means a green CI.
+
+The VS Code extension (`extensions/vscode`):
+```sh
+go build -o extensions/vscode/out/ship ./cmd/ship   # the binary the contract test talks to
+cd extensions/vscode
+npm ci && npm run typecheck && npm run build
+SHIP_BIN="$PWD/out/ship" npm test
+```
+
+Generated files (`schemas/`) are regenerated with `go run ./tools/gen`, never edited by hand; a test fails when they are out of date.
+
+The release configuration: `go run github.com/goreleaser/goreleaser/v2@v2.19.0 check`, then `… release --snapshot --clean --skip=sbom` to try it (output in `dist/`). The snapshot also builds the Docker image ([build/docker/Dockerfile](build/docker/Dockerfile)), which needs Docker with buildx and QEMU for arm64; add `--skip=docker` without them.
+
+## Code
+- Every source file starts with the SPDX header (`Apache-2.0`, checked by `addlicense`); match the surrounding code.
+- New behaviour → table tests; new parser → fuzz target; new error situation → a test that reproduces it, end-to-end in `cmd/ship` when git or GitHub is involved.
+- No dependency outside the standard library and `golang.org/x` without an ADR ([ADR-0012](docs/adr/0012-dependency-budget.md)).
+- Never call a shell from Go: `exec.Command` with explicit arguments.
+
+## Commits
+1. Format `✨ feat(scope): subject`: gitmoji, then a Conventional Commits type, subject ≤ 50 characters, header ≤ 72 ([docs/reference/conventions.md](docs/reference/conventions.md)). `ship types` lists the types and their gitmoji. Check a header with:
+   ```sh
+   go run ./cmd/ship check title -- "📝 docs(readme): explain the dev container"
+   ```
+   Simplest of all: ship your change with ship-it itself (`go run ./cmd/ship`).
+2. Explain **why** in the commit body: ship-it builds the pull request summary from it.
+3. **Sign off every commit** with `git commit -s`. The `Signed-off-by:` line certifies the [Developer Certificate of Origin 1.1](https://developercertificate.org/): you wrote the change, or have the right to submit it under the project licence. Only a human can sign off; an AI agent never adds it for you.
+
+## Pull requests
+- The [pull request template](.github/pull_request_template.md) asks how **you** tested the change: report what you did and saw, not CI output. `ship` fills the summary, the issue and the AI usage section; you answer the rest.
+- Say which AI tools you used, if any, in the "AI usage" section. You must be able to explain every line you submit.
+- CI must be green on Windows, macOS and Linux.
+- Review comments may use [Conventional Comments](https://conventionalcomments.org/) (`suggestion (non-blocking): …`), which `ship` will sort by whether they block.
+
+## Propose an ADR
+Architectural changes, new dependencies and changes to the conventions need an Architecture Decision Record:
+1. Copy the structure of an existing ADR in `docs/adr/`: context → options (pros and cons) → decision → consequences.
+2. Use the next free number (`docs/adr/NNNN-short-title.md`) with status `proposed`, and add it to the table of [docs/adr/README.md](docs/adr/README.md).
+3. Open a pull request with the ADR before the code. Its status changes to `accepted` once the decision is agreed in review.
+
+## Licence
+By contributing you agree that your contributions are licensed under the [Apache License 2.0](LICENSE).

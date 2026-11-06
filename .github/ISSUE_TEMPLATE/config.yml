@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Grégoire Favreau
+#
+# Template chooser (https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository).
+# No blank issues: every issue goes through a form (docs/design/git-github-standards.md
+# NI1). Questions go to Discussions and vulnerabilities to private reporting,
+# as cli/cli does.
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/GregoireF/ship-it/security/advisories/new
+    about: Privately, through GitHub's private vulnerability reporting. Never in a public issue (SECURITY.md).
+  - name: Ask a question
+    url: https://github.com/GregoireF/ship-it/discussions
+    about: How do I…? Is this expected? Ideas that are not a concrete request yet.

@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Grégoire Favreau
+#
+# One catch-all line, as goreleaser does: no
+# pull request is left without an owner. Add per-directory owners below it
+# once there is more than one maintainer (the last matching line wins).
+# Syntax: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+* @GregoireF

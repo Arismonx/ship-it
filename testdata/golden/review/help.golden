@@ -1,0 +1,14 @@
+⛵ ship · main → feat/add-vat-rate
+
+  Keys
+    Enter           ship (in a text field: next field)
+    Ctrl+Enter, F2  ship from anywhere, a text field included
+    Ctrl+L          commit locally only: no push, no pull request
+    Tab, Shift+Tab  next or previous field
+    ↑ ↓             move in the files and the parts
+    Space           select or unselect a file; ship only a part
+    ← →             fold or unfold the files
+    ?               this help (outside a text field)
+    Esc, Ctrl+C     cancel: nothing changes
+
+  Any key closes this help.

@@ -1,0 +1,15 @@
+⛵ ship · main → fix/cache-vat-rates
+
+› Type     ( ) refactor  ›(•) fix
+           ✓ allowed by the project's commitlint
+  Title    ⚡️ fix(cart): cache vat rates
+           ✓ valid · 29/72
+  Branch   fix/cache-vat-rates
+           ✓ valid
+  Why?     optional
+  Tested?  optional
+
+  Files    ▾ 1/1 selected
+           [x] internal/cart/vat.go
+
+Enter ship · Ctrl+L commit only · Tab field · Space toggle · ? help · Esc cancel

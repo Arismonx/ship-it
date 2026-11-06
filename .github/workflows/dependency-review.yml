@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Grégoire Favreau
+#
+# Dependency review (docs/design/workflows.md §5): a pull request that adds a
+# dependency with a known vulnerability (moderate or worse) fails before
+# merge, whatever its ecosystem (go.mod, package-lock.json, actions).
+# govulncheck (tools/check) stays the reference for Go: it checks that the
+# vulnerable symbol is reachable. Needs the dependency graph, available on a
+# public repository or with Advanced Security: set the repository variable
+# CODE_SCANNING to "true" once it is available.
+name: dependency-review
+
+on:
+  pull_request:
+
+# Nothing by default; the job asks for what it needs.
+permissions: {}
+
+concurrency:
+  group: dependency-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: dependency review
+    if: vars.CODE_SCANNING == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: moderate

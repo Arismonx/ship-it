@@ -1,0 +1,84 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Grégoire Favreau
+#
+# Static analysis of the workflows themselves (docs/design/workflows.md §5): a
+# workflow runs with a token and secrets, so a template injection or an
+# over-broad permission is a supply-chain hole. Two linters:
+# - zizmor (https://docs.zizmor.sh): security audits (injection, permissions,
+#   pinning, credentials, cache poisoning, Dependabot cooldown…);
+# - actionlint (https://github.com/rhysd/actionlint): syntax, expressions,
+#   runner labels, action inputs.
+# Same commands on a laptop: go run ./tools/check -workflows.
+name: zizmor
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Nothing by default; each job asks for what it needs.
+permissions: {}
+
+concurrency:
+  group: zizmor-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Blocking: fails the pull request on any finding. Works on a private
+  # repository without Advanced Security.
+  zizmor:
+    name: zizmor
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read # zizmor-action: needed on a private repository
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: zizmorcore/zizmor-action@53290badfa369cb0bf7ad16342cb62c2fa47ac7b # v0.8.0
+        with:
+          version: 1.31.1 # pin: zizmor
+          advanced-security: false
+          annotations: true
+
+  # Findings in the Security tab (SARIF, category "zizmor"). Code scanning
+  # needs a public repository or Advanced Security: set the repository
+  # variable CODE_SCANNING to "true" once it is available.
+  zizmor-sarif:
+    name: zizmor (code scanning)
+    if: vars.CODE_SCANNING == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read # zizmor-action: needed on a private repository
+      security-events: write # upload the SARIF report
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: zizmorcore/zizmor-action@53290badfa369cb0bf7ad16342cb62c2fa47ac7b # v0.8.0
+        with:
+          version: 1.31.1 # pin: zizmor
+
+  actionlint:
+    name: actionlint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false # nothing to cache: actionlint is built once per run
+      # Built from source at a fixed version, checked against sum.golang.org;
+      # no module of ship-it depends on it. shellcheck (preinstalled on the
+      # Ubuntu runner) also lints the run: scripts.
+      - name: actionlint
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12 # pin: actionlint

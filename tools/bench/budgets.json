@@ -1,0 +1,16 @@
+{
+  "$comment": "Performance budgets checked by go run ./tools/bench (docs/design/performance.md). max_git is exact: the git processes per command do not depend on the machine; lower it when a change saves one. max_ns is about 4x the median measured on Windows (i7-12700F, 2026-11-01), for slower CI runners.",
+  "benchmarks": [
+    {"package": "./internal/core/snapshot", "name": "BenchmarkParseUnifiedDiff", "max_ns": 5e6, "note": "1.2 ms"},
+    {"package": "./internal/core/secrets", "name": "BenchmarkScan", "max_ns": 25e6, "note": "6.5 ms"},
+    {"package": "./internal/core/plan", "name": "BenchmarkPropose", "max_ns": 10e6, "note": "2.0 ms"},
+    {"package": "./internal/core/config", "name": "BenchmarkMergeFor", "max_ns": 3e5, "note": "62 µs"},
+    {"package": "./internal/core/glob", "name": "BenchmarkAny", "max_ns": 250e6, "note": "59 ms"},
+    {"package": "./internal/adapters/checkpointstore", "name": "BenchmarkCreateWarm", "benchtime": "10x", "max_ns": 1.5e9, "max_git": 7, "note": "432 ms"},
+    {"package": "./internal/adapters/checkpointstore", "name": "BenchmarkCreateCold", "benchtime": "2x", "max_ns": 3e9, "max_git": 9, "note": "760 ms: one git fast-import pack (was 5.9 s, one loose object per file)"},
+    {"package": "./cmd/ship", "name": "BenchmarkStatusOffline", "benchtime": "10x", "max_ns": 600e6, "max_git": 5, "note": "129 ms"},
+    {"package": "./cmd/ship", "name": "BenchmarkPlan", "benchtime": "10x", "max_ns": 1e9, "max_git": 7, "note": "259 ms"},
+    {"package": "./cmd/ship", "name": "BenchmarkShipLocal", "benchtime": "10x", "max_ns": 4e9, "max_git": 23, "note": "1.0 s"},
+    {"package": "./cmd/ship", "name": "BenchmarkBinaryStatusOffline", "benchtime": "10x", "max_ns": 800e6, "max_git": 5, "note": "185 ms, process start included"}
+  ]
+}

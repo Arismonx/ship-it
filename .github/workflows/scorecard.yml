@@ -1,0 +1,55 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Grégoire Favreau
+#
+# OpenSSF Scorecard (docs/design/workflows.md §5): scores the repository's
+# supply-chain practices (pinned dependencies, token permissions, branch
+# protection, signed releases…) and lists the gaps in the Security tab.
+# Modelled on ossf/scorecard's own workflow. Scorecard only analyses the
+# default branch. The upload needs code scanning (repository variable
+# CODE_SCANNING); publishing the score (badge, api.scorecard.dev) only makes
+# sense on a public repository (repository variable SCORECARD_PUBLISH).
+name: scorecard
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "23 5 * * 6"
+  # Some checks (branch protection) change without a push.
+  workflow_dispatch:
+
+# Nothing by default; the job asks for what it needs.
+permissions: {}
+
+concurrency:
+  group: scorecard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analysis:
+    name: scorecard
+    if: vars.CODE_SCANNING == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      # Reads recommended by scorecard-action for a private repository
+      # (commit history, SAST detection).
+      issues: read # list the commits' linked issues
+      pull-requests: read # check that changes were reviewed
+      checks: read # detect the SAST tools that run on pull requests
+      security-events: write # upload the SARIF report
+      id-token: write # sign the published results (publish_results), Scorecard requirement
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ossf/scorecard-action@fa7117db83c52d787ae5a89f350999701505d78e # v2.5.0
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          publish_results: ${{ vars.SCORECARD_PUBLISH == 'true' }}
+      - uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          sarif_file: results.sarif
+          category: scorecard

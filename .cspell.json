@@ -1,0 +1,13 @@
+{
+  "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
+  "version": "0.2",
+  "language": "en,fr",
+  "words": [
+    "gitmoji", "gitmojis", "commitlint", "gregoiref", "conventionalbranch", "semver", "slog",
+    "Crockford", "ULID", "jsonl", "blackbox", "OTel", "sysexits", "testscript", "txtar",
+    "Favreau", "Grégoire", "normes", "heritage", "ldflags", "golangci", "goreleaser",
+    "covdata", "ghstatus", "gitexec", "fsconfig", "oplog", "oplogstore", "checkpointstore",
+    "archtest", "testkit", "Hotfix", "bugfix", "mkdir"
+  ],
+  "ignorePaths": ["go.sum", "schemas/**", "testdata/**", "assets/**", "docs/**"]
+}

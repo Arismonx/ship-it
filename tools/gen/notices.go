@@ -1,0 +1,169 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Grégoire Favreau
+
+package main
+
+import (
+	"bytes"
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"regexp"
+	"slices"
+	"strings"
+)
+
+// THIRD_PARTY_NOTICES.txt carries the licence of every module linked into
+// the ship binary, as their licences (MIT, BSD-3-Clause) require for a binary
+// distribution. GoReleaser puts it in each archive and in the image
+// (.goreleaser.yaml, build/docker/Dockerfile).
+//
+// It is a mode of gen, not a task of its own: gen already owns "generated
+// files never edited by hand" and the test that fails when one is out of date,
+// so a dependency bump without `go run ./tools/gen` fails the same check.
+
+const noticesFile = "THIRD_PARTY_NOTICES.txt"
+
+// releaseTargets are the platforms of .goreleaser.yaml: a module linked on
+// one of them only (x/termios on Unix, x/windows on Windows) is listed too.
+var releaseTargets = [][2]string{
+	{"linux", "amd64"}, {"linux", "arm64"},
+	{"darwin", "amd64"}, {"darwin", "arm64"},
+	{"windows", "amd64"}, {"windows", "arm64"},
+}
+
+// licenseName matches the files that carry a licence or a notice at the root
+// of a module: LICENSE, LICENCE, COPYING, NOTICE, PATENTS (any case, any
+// extension).
+var licenseName = regexp.MustCompile(`(?i)^(licen[cs]e|copying|notice|patents)([.-].*)?$`)
+
+type linkedModule struct {
+	path, version, dir string
+}
+
+// goCommand runs the go command in root with a fixed environment, so that the
+// result does not depend on the developer's workspace or flags.
+func goCommand(root string, env []string, args ...string) ([]byte, error) {
+	cmd := exec.Command("go", args...)
+	cmd.Dir = root
+	cmd.Env = append(os.Environ(), append([]string{"GOWORK=off", "GOFLAGS=", "CGO_ENABLED=0"}, env...)...)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("go %s: %v\n%s", strings.Join(args, " "), err, stderr.String())
+	}
+	return out, nil
+}
+
+// linkedModules lists the modules whose packages are compiled into ship on
+// any release target, the main module excluded, sorted by path.
+func linkedModules(root string) ([]linkedModule, error) {
+	versions := map[string]string{}
+	for _, target := range releaseTargets {
+		out, err := goCommand(root, []string{"GOOS=" + target[0], "GOARCH=" + target[1]},
+			"list", "-deps", "-f", "{{if not .Standard}}{{with .Module}}{{if not .Main}}{{.Path}} {{.Version}}{{end}}{{end}}{{end}}", "./cmd/ship")
+		if err != nil {
+			return nil, err
+		}
+		for _, line := range strings.Split(string(out), "\n") {
+			if path, version, ok := strings.Cut(strings.TrimSpace(line), " "); ok {
+				versions[path] = version
+			}
+		}
+	}
+	paths := make([]string, 0, len(versions))
+	for p := range versions {
+		paths = append(paths, p)
+	}
+	slices.Sort(paths)
+	out, err := goCommand(root, nil, append([]string{"list", "-m", "-f", "{{.Path}} {{.Dir}}"}, paths...)...)
+	if err != nil {
+		return nil, err
+	}
+	dirs := map[string]string{}
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		if path, dir, ok := strings.Cut(strings.TrimSpace(line), " "); ok {
+			dirs[path] = dir
+		}
+	}
+	modules := make([]linkedModule, 0, len(paths))
+	for _, p := range paths {
+		if dirs[p] == "" {
+			return nil, fmt.Errorf("%s %s is not in the module cache: run go mod download", p, versions[p])
+		}
+		modules = append(modules, linkedModule{path: p, version: versions[p], dir: dirs[p]})
+	}
+	return modules, nil
+}
+
+// licenseFiles returns the licence files at the root of dir, sorted, with
+// their text (line endings normalised).
+func licenseFiles(dir string) ([][2]string, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+	var files [][2]string
+	for _, e := range entries {
+		if e.IsDir() || !licenseName.MatchString(e.Name()) {
+			continue
+		}
+		text, err := os.ReadFile(filepath.Join(dir, e.Name()))
+		if err != nil {
+			return nil, err
+		}
+		normalized := strings.TrimRight(strings.ReplaceAll(string(text), "\r\n", "\n"), " \t\n")
+		files = append(files, [2]string{e.Name(), normalized})
+	}
+	return files, nil
+}
+
+// thirdPartyNotices builds THIRD_PARTY_NOTICES.txt from the module cache.
+func thirdPartyNotices(root string) ([]byte, error) {
+	modules, err := linkedModules(root)
+	if err != nil {
+		return nil, err
+	}
+	goroot, err := goCommand(root, nil, "env", "GOROOT")
+	if err != nil {
+		return nil, err
+	}
+	rule := strings.Repeat("-", 80)
+	var b strings.Builder
+	b.WriteString("Third-party notices for ship\n")
+	b.WriteString("============================\n\n")
+	b.WriteString("ship is licensed under the Apache License 2.0 (see LICENSE). The binary\n")
+	b.WriteString("also contains the software below, under the licences reproduced here: the\n")
+	b.WriteString("Go standard library and runtime, and every module linked into ./cmd/ship\n")
+	b.WriteString("on Linux, macOS and Windows (amd64, arm64).\n\n")
+	b.WriteString("Generated by `go run ./tools/gen` from `go list -deps` and the module cache;\n")
+	b.WriteString("do not edit by hand.\n\n")
+	b.WriteString("- The Go standard library and runtime (https://go.dev)\n")
+	for _, m := range modules {
+		fmt.Fprintf(&b, "- %s %s\n", m.path, m.version)
+	}
+	section := func(title, dir string) error {
+		files, err := licenseFiles(dir)
+		if err != nil {
+			return err
+		}
+		if len(files) == 0 {
+			return fmt.Errorf("%s: no licence file in %s", title, dir)
+		}
+		for _, f := range files {
+			fmt.Fprintf(&b, "\n%s\n%s (%s)\n%s\n\n%s\n", rule, title, f[0], rule, f[1])
+		}
+		return nil
+	}
+	if err := section("The Go standard library and runtime", strings.TrimSpace(string(goroot))); err != nil {
+		return nil, err
+	}
+	for _, m := range modules {
+		if err := section(m.path+" "+m.version, m.dir); err != nil {
+			return nil, err
+		}
+	}
+	return []byte(b.String()), nil
+}

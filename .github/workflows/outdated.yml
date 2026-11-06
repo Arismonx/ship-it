@@ -1,0 +1,91 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Grégoire Favreau
+#
+# Weekly watch of the pinned tools that Dependabot cannot update (zizmor,
+# actionlint, GoReleaser, cosign: tools/internal/pins), docs/design/workflows.md
+# §5. `go run ./tools/outdated` compares them with their latest releases
+# (7-day cooldown); when something is behind, ONE issue is opened, or updated
+# if it is already open; it is closed once everything is up to date.
+# Two jobs, so that the code of the repository never runs with a token that
+# can write issues.
+name: outdated
+
+on:
+  schedule:
+    - cron: "41 6 * * 1"
+  workflow_dispatch:
+
+# Nothing by default; each job asks for what it needs.
+permissions: {}
+
+concurrency:
+  group: outdated
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: check pinned versions
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      status: ${{ steps.outdated.outputs.status }}
+      report: ${{ steps.outdated.outputs.report }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: outdated
+        id: outdated
+        env:
+          # Read-only token: a higher rate limit for the GitHub API.
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          status=0
+          go run ./tools/outdated -format=markdown > "$RUNNER_TEMP/outdated.md" || status=$?
+          cat "$RUNNER_TEMP/outdated.md"
+          # 0 up to date, 1 behind, 2 error (the run fails).
+          if [ "$status" -ge 2 ]; then exit 1; fi
+          delimiter="EOF_$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
+          {
+            echo "status=$status"
+            echo "report<<$delimiter"
+            cat "$RUNNER_TEMP/outdated.md"
+            echo "$delimiter"
+          } >> "$GITHUB_OUTPUT"
+
+  issue:
+    name: tracking issue
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write # open, update or close the tracking issue
+    steps:
+      - name: open, update or close the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          STATUS: ${{ needs.check.outputs.status }}
+          REPORT: ${{ needs.check.outputs.report }}
+        run: |
+          set -euo pipefail
+          title="Pinned tools are behind their latest release"
+          number="$(gh issue list --state open --search "\"$title\" in:title" --json number,title \
+            --jq "map(select(.title == \"$title\")) | .[0].number // empty")"
+          printf '%s\n' "$REPORT" > "$RUNNER_TEMP/report.md"
+          if [ "$STATUS" = 1 ]; then
+            if [ -n "$number" ]; then
+              gh issue edit "$number" --body-file "$RUNNER_TEMP/report.md"
+            else
+              gh issue create --title "$title" --body-file "$RUNNER_TEMP/report.md"
+            fi
+          elif [ -n "$number" ]; then
+            gh issue close "$number" --comment "Every pinned tool is up to date."
+          fi

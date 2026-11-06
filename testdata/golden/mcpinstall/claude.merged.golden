@@ -1,0 +1,16 @@
+{
+  "zFirst": true,
+  "mcpServers": {
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/"
+    },
+    "ship-it": {
+      "type": "stdio",
+      "command": "ship",
+      "args": [
+        "mcp"
+      ]
+    }
+  }
+}

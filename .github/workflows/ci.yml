@@ -1,0 +1,104 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Grégoire Favreau
+#
+# Quality gate of every pull request (docs/design/workflows.md §1). The checks
+# themselves live in tools/check, so that a laptop runs exactly the same.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Nothing by default; each job asks for what it needs (zizmor: excessive-permissions).
+permissions: {}
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: check (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      # The race detector needs cgo, available on the Linux and macOS runners.
+      # Expressions go through the environment, never into the script itself
+      # (zizmor: template-injection); bash reads them the same way on every OS.
+      - name: check
+        shell: bash
+        env:
+          RACE: ${{ runner.os != 'Windows' }}
+        run: go run ./tools/check -fuzztime=10s -race="$RACE"
+
+  # Performance budgets (docs/design/performance.md), on one OS: the git
+  # processes per command are the same everywhere, and blocking on them never
+  # flakes; time ceilings keep a wide headroom for shared runners.
+  bench:
+    name: bench (ubuntu-latest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: budgets
+        run: go run ./tools/bench
+
+  extension:
+    name: extension (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: extensions/vscode
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: extensions/vscode/package-lock.json
+      # The binary the contract test talks to: the one of this commit.
+      - name: build ship
+        working-directory: .
+        shell: bash
+        env:
+          EXE: ${{ runner.os == 'Windows' && '.exe' || '' }}
+        run: go build -o "extensions/vscode/out/ship$EXE" ./cmd/ship
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - name: test
+        env:
+          SHIP_BIN: ${{ github.workspace }}/extensions/vscode/out/ship${{ runner.os == 'Windows' && '.exe' || '' }}
+        run: npm test

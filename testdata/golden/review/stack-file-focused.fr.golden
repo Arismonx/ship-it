@@ -1,0 +1,27 @@
+⛵ ship stack · 3 couches sur main, du bas vers le haut
+
+  Couche 1 · 2 fichiers, 310 lignes
+    Titre     ✨ feat(api): add the cart
+              ✓ valide · 25/72
+    Branche   feat/add-the-cart
+              ✓ valide
+    Fichiers  api/cart.go
+            › api/cart_test.go
+
+  Couche 2 · 1 fichier, 120 lignes
+    Titre     ✨ feat(web): add the cart page
+              ✓ valide · 30/72
+    Branche   feat/add-the-cart-page
+              ✓ valide
+    Fichiers  web/cart.ts
+
+  Couche 3 · 1 fichier, 40 lignes
+    Titre     📝 docs: describe the cart
+              ✓ valide · 25/72
+    Branche   chore/describe-the-cart
+              ✓ valide
+    Fichiers  docs/cart.md
+
+Dans aucune couche, laissés non commités : README.md
+
+Entrée livre · Maj+↑↓ ou 1-3 déplace le fichier · ? aide · Échap annule

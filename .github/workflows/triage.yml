@@ -1,0 +1,113 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Grégoire Favreau
+#
+# Triage (docs/design/workflows.md §9), without pull_request_target: zizmor
+# warns that it is unsafe even when no pull request code runs.
+# - label: `ship label --pr N` (dogfooding) puts kind/ and size/ labels,
+#   computed from the pull request's commits and files through the API. A
+#   fork's pull_request event only gets a read-only token, so pull requests
+#   from forks are labelled by the hourly run instead; same-repository pull
+#   requests are labelled at once. ship is always built from the base branch
+#   (trusted code), never from the pull request.
+# - welcome: a first comment for first-time contributors (pull requests by
+#   the hourly run, issues when opened), with gh; no third-party action.
+name: triage
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  issues:
+    types: [opened]
+  schedule:
+    - cron: "23 * * * *"
+  workflow_dispatch:
+
+# Nothing by default; each job asks for what it needs.
+permissions: {}
+
+concurrency:
+  group: triage-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  label:
+    name: label pull requests
+    # Not on issues; on pull_request only for same-repository branches (a
+    # fork's token cannot write labels: the hourly run handles those).
+    if: >-
+      github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: read # list open pull requests, their commits and files
+      issues: write # add and remove labels (pull requests are issues for labels)
+    steps:
+      # The base branch, never the pull request's code: it runs with a token
+      # that can write labels.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: build ship
+        run: go build -o "$RUNNER_TEMP/ship" ./cmd/ship
+      - name: label
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -uo pipefail
+          if [ -n "$PR" ]; then
+            numbers="$PR"
+          else
+            numbers="$(gh pr list --state open --limit 100 --json number --jq '.[].number')"
+          fi
+          status=0
+          for n in $numbers; do
+            "$RUNNER_TEMP/ship" label --pr "$n" || status=1
+          done
+          exit "$status"
+
+  welcome:
+    name: welcome first-time contributors
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write # comment on a new issue
+      pull-requests: write # comment on a pull request
+    steps:
+      - name: welcome
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+          ISSUE: ${{ github.event.issue.number }}
+          ASSOCIATION: ${{ github.event.issue.author_association }}
+          CONTRIBUTING: ${{ github.server_url }}/${{ github.repository }}/blob/HEAD/CONTRIBUTING.md
+        run: |
+          set -euo pipefail
+          marker='<!-- ship-it:welcome -->'
+          body="$marker
+          Thank you for your first contribution to ship-it! A maintainer will look at it soon.
+          Please read [CONTRIBUTING.md]($CONTRIBUTING): commits are signed off (\`git commit -s\`, DCO) and titles follow the conventions that \`ship check title\` checks."
+          first() { [ "$1" = FIRST_TIMER ] || [ "$1" = FIRST_TIME_CONTRIBUTOR ]; }
+          if [ "$EVENT" = issues ]; then
+            if first "$ASSOCIATION"; then gh issue comment "$ISSUE" --body "$body"; fi
+            exit 0
+          fi
+          # Scheduled: open pull requests by first-time contributors, once.
+          gh api "repos/$GH_REPO/pulls?state=open&per_page=100" \
+            --jq '.[] | select(.author_association == "FIRST_TIMER" or .author_association == "FIRST_TIME_CONTRIBUTOR") | .number' |
+          while read -r n; do
+            if gh api "repos/$GH_REPO/issues/$n/comments?per_page=100" --jq '.[].body' | grep -qF "$marker"; then
+              continue
+            fi
+            gh pr comment "$n" --body "$body"
+          done

@@ -1,0 +1,46 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Grégoire Favreau
+#
+# Issue form. Starts from the problem, not the solution (the "why" that
+# docs/reference/conventions.md asks of commits). "enhancement" is GitHub's default
+# label, ignored once `ship sync` has renamed it to kind/feature.
+name: Feature request
+description: Something ship should do, or do differently.
+labels: ["kind/feature", "enhancement", "triage/needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check the [roadmap](https://github.com/GregoireF/ship-it/blob/main/ROADMAP.md) first: your idea may already be planned or under discussion.
+        Open-ended ideas fit better in [Discussions](https://github.com/GregoireF/ship-it/discussions).
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem do you have?
+      description: What you were trying to do with git or GitHub, and what got in the way.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like ship to do?
+      description: The command, flag or behaviour you have in mind, and what it would print.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+      description: Workarounds you use today, other tools that do it.
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Which part of ship-it?
+      multiple: true
+      options:
+        - CLI
+        - VS Code extension
+        - MCP server (AI agents)
+        - Configuration or organisation policy
+        - Releases and distribution
+        - Other

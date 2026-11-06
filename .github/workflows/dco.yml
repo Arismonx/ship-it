@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Grégoire Favreau
+#
+# Developer Certificate of Origin (docs/design/workflows.md §7, decision N14):
+# every commit of a pull request must be signed off (git commit -s) by its
+# author. Dogfooding: the check is `ship check signoff`, built from the pull
+# request itself, with a read-only token; no pull_request_target.
+name: dco
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# Nothing by default; the job asks for what it needs.
+permissions: {}
+
+concurrency:
+  group: dco-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  signoff:
+    name: signoff
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The whole history: base..head must be complete, whatever its length.
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      # The SHAs go through the environment, never into the script itself.
+      - name: check signoff
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: go run ./cmd/ship check signoff --from "$BASE" --to "$HEAD"

@@ -1,0 +1,16 @@
+⛵ ship stack · 3 layers on main, bottom first
+
+  Keys
+    Enter            ship (in a text field: next line)
+    Ctrl+Enter, F2   ship from anywhere, a text field included
+    Ctrl+L           commit locally only: no push, no pull request
+    ↑ ↓              previous or next line
+    Tab, Shift+Tab   next or previous layer
+    Shift+↑ ↓, K J   on a layer: move it one place up or down the list
+                     on a file: move it to the layer above or below
+    1 to 9           on a file: move it to that layer
+    ?                this help (outside a text field)
+    Esc, Ctrl+C      cancel: nothing changes
+
+  The list starts with the bottom layer, the one based on the default branch.
+  Any key closes this help.

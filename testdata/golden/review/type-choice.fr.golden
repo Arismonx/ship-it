@@ -1,0 +1,15 @@
+⛵ ship · main → chore/cache-vat-rates
+
+› Type        ›( ) refactor  ( ) fix
+              ✗ Le commitlint du projet refuse perf : choisis un type (←/→, Esp…
+  Titre       ⚡️ perf(cart): cache vat rates
+              ✓ valide · 30/72
+  Branche     chore/cache-vat-rates
+              ✓ valide
+  Pourquoi ?  facultatif
+  Testé ?     facultatif
+
+  Fichiers    ▾ 1/1 sélectionnés
+              [x] internal/cart/vat.go
+
+Entrée livre · Ctrl+L commit seul · Espace coche · ? aide · Échap annule

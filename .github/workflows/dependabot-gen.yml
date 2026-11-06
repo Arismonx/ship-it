@@ -1,0 +1,158 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Grégoire Favreau
+#
+# Generated files on Dependabot pull requests (docs/design/workflows.md §10): a
+# dependency bump changes THIRD_PARTY_NOTICES.txt (and may change other
+# outputs of `go run ./tools/gen`), whose staleness test would fail. This
+# workflow regenerates them and commits the result to the pull request.
+#
+# Safe pattern, without pull_request_target (zizmor: dangerous-triggers):
+# - trigger `pull_request`: for Dependabot, GitHub treats the run like a
+#   fork's (read-only token, Dependabot secrets only), and "you can use the
+#   permissions key in your workflow to increase the access for the token";
+# - only pull requests opened by Dependabot from this repository
+#   (pull_request.user.login, not github.actor: zizmor bot-conditions);
+# - `generate` runs the pull request's code (the bumped dependencies are
+#   compiled into tools/gen) with a read-only token and hands over a patch;
+# - `commit` has contents: write but runs no repository code: it applies the
+#   patch only if it touches the generated files listed below (kept in step
+#   with tools/gen by its test), signs off and pushes.
+# The push uses an installation token of a dedicated GitHub App (Dependabot
+# secrets APP_CLIENT_ID and APP_PRIVATE_KEY), so the checks run on the new
+# commit; without them it falls back to the job token, whose push starts no
+# workflow run (GitHub's rule): close and reopen the pull request then.
+name: dependabot-gen
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# Nothing by default; each job asks for what it needs.
+permissions: {}
+
+concurrency:
+  group: dependabot-gen-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  generate:
+    name: regenerate
+    if: >-
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      changed: ${{ steps.diff.outputs.changed }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The branch's own commit, not the merge with the base.
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: generate
+        run: go run ./tools/gen
+      - name: diff
+        id: diff
+        run: |
+          set -euo pipefail
+          git add --all
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git diff --cached --binary > "$RUNNER_TEMP/generated.patch"
+          git diff --cached --stat
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+      - if: steps.diff.outputs.changed == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: generated-patch
+          path: ${{ runner.temp }}/generated.patch
+          retention-days: 1
+
+  commit:
+    name: commit
+    needs: generate
+    if: needs.generate.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # fallback push with the job token when the App is not set up
+    env:
+      # Dependabot-triggered runs only read Dependabot secrets, never an
+      # environment's: zizmor's secrets-outside-env (auditor) cannot apply.
+      HAS_APP: ${{ secrets.APP_CLIENT_ID != '' && secrets.APP_PRIVATE_KEY != '' }} # zizmor: ignore[secrets-outside-env]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: generated-patch
+          path: ${{ runner.temp }}/patch
+      # A push with an App installation token starts the checks of the new
+      # commit; one with the job token does not. Scoped to this repository
+      # (the default without owner) and to contents: write only.
+      - name: app token
+        id: app
+        if: env.HAS_APP == 'true'
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ secrets.APP_CLIENT_ID }} # zizmor: ignore[secrets-outside-env]
+          private-key: ${{ secrets.APP_PRIVATE_KEY }} # zizmor: ignore[secrets-outside-env]
+          permission-contents: write
+      - name: apply, sign off and push
+        env:
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+          TOKEN: ${{ steps.app.outputs.token || github.token }}
+          WITH_APP: ${{ steps.app.outputs.token != '' }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          # Every output of `go run ./tools/gen` (tools/gen's test checks it).
+          ALLOWED: |
+            THIRD_PARTY_NOTICES.txt
+            schemas/ship.schema.json
+            schemas/policy.schema.json
+            schemas/user.schema.json
+            docs/reference/settings.md
+            docs/reference/errors.md
+            extensions/vscode/src/generated/tools.ts
+            build/ship-it-action/action.yml
+            build/ship-it-action/README.md
+            build/ship-it-action/LICENSE
+        run: |
+          set -euo pipefail
+          # Dependabot pushed again meanwhile: that run will regenerate.
+          if [ "$(git rev-parse HEAD)" != "$HEAD_SHA" ]; then
+            echo "The branch moved since $HEAD_SHA: nothing to do."
+            exit 0
+          fi
+          patch="$RUNNER_TEMP/patch/generated.patch"
+          git apply --numstat "$patch" | cut -f3 | while read -r path; do
+            if ! printf '%s\n' "$ALLOWED" | grep -qxF -- "$path"; then
+              echo "::error::the patch touches $path, which tools/gen does not generate"
+              exit 1
+            fi
+          done
+          git apply --index "$patch"
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit --signoff --quiet -m "📦️ build(deps): regenerate the generated files" \
+              -m "Output of go run ./tools/gen after the dependency update. [dependabot skip]: Dependabot may still rebase and force-push over this commit; this workflow then runs again."
+          # The token only reaches git through its environment (never written
+          # to .git/config, never on a command line).
+          basic="$(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)"
+          echo "::add-mask::$basic"
+          GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0="http.https://github.com/.extraheader" \
+            GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $basic" \
+            git push origin "HEAD:refs/heads/$BRANCH"
+          if [ "$WITH_APP" != true ]; then
+            echo "::notice::Pushed with the job token: the checks will not run on the new commit. Close and reopen the pull request before merging, or set up the App (docs/design/workflows.md §10)."
+          fi

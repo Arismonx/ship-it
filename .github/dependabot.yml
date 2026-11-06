@@ -1,0 +1,76 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Grégoire Favreau
+#
+# docs/design/workflows.md §4 and §5. Commit messages follow docs/reference/conventions.md.
+#
+# cooldown: a new release waits 7 days before Dependabot proposes it, so that
+# a hijacked release is usually caught and yanked before it reaches us
+# (zizmor: dependabot-cooldown). Security updates ignore the cooldown.
+# groups: one pull request per ecosystem for minor and patch bumps; a major
+# bump keeps its own pull request because it may need code changes.
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      gomod:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: "📦️ build"
+      include: scope
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: "👷 ci"
+      include: scope
+  # Base images pinned by digest: the ship image (build/docker) and the dev
+  # container (.devcontainer/Dockerfile).
+  - package-ecosystem: docker
+    directories: [/build/docker, /.devcontainer]
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      docker:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: "📦️ build"
+      include: scope
+  # Features of .devcontainer/devcontainer.json.
+  - package-ecosystem: devcontainers
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "🔧 chore"
+      include: scope
+  - package-ecosystem: npm
+    directory: /extensions/vscode
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      npm-dev:
+        dependency-type: development
+        update-types: [minor, patch]
+      npm-prod:
+        dependency-type: production
+        update-types: [minor, patch]
+    commit-message:
+      prefix: "📦️ build"
+      include: scope

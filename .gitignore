@@ -1,0 +1,34 @@
+# Build output
+/dist/
+/bin/
+*.exe
+*.test
+*.out
+
+# Coverage
+/coverage/
+*.coverprofile
+
+# Go workspace (local only)
+go.work
+go.work.sum
+
+# Extension
+extensions/vscode/node_modules/
+extensions/vscode/out/
+extensions/vscode/dist/
+extensions/vscode/bin/
+*.vsix
+
+# Local env and secrets
+.env
+.env.*
+!.env.example
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+
+# Local agent worktrees and settings (Claude Code)
+.claude/

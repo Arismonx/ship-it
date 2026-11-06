@@ -1,0 +1,66 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Grégoire Favreau
+#
+# CodeQL semantic analysis (docs/design/workflows.md §5): data-flow queries that
+# staticcheck and govulncheck do not run (command injection, path traversal,
+# token leaks…). Three languages: Go (the ship binary), JavaScript/TypeScript
+# (extensions/vscode) and actions (the workflows, complementing zizmor).
+# Code scanning needs a public repository or Advanced Security: set the
+# repository variable CODE_SCANNING to "true" once it is available.
+name: codeql
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    # Weekly, so that new queries run on unchanged code too.
+    - cron: "17 4 * * 1"
+
+# Nothing by default; the job asks for what it needs.
+permissions: {}
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: analyze (${{ matrix.language }})
+    if: vars.CODE_SCANNING == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read # codeql-action: needed on a private repository
+      security-events: write # upload the results
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Go is compiled: CodeQL sees what the build compiles.
+          - language: go
+            build-mode: manual
+          - language: javascript-typescript
+            build-mode: none
+          - language: actions
+            build-mode: none
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - if: matrix.language == 'go'
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          queries: security-extended
+      - if: matrix.build-mode == 'manual'
+        name: build
+        run: go build ./...
+      - uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          category: /language:${{ matrix.language }}

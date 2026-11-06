@@ -1,0 +1,94 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Grégoire Favreau
+#
+# Issue form (https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-issue-forms).
+# Modelled on astral-sh/uv and kubernetes:
+# version, platform and a reproduction are required. Labels that do not exist
+# are ignored by GitHub, so both the ship-it taxonomy (docs/design/git-github-standards.md §5, created by
+# `ship sync`) and GitHub's default "bug" are listed.
+name: Bug report
+description: ship did something wrong, or failed where it should not have.
+labels: ["kind/bug", "bug", "triage/needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug.
+        **Security issue?** Do not open a public issue: follow [SECURITY.md](https://github.com/GregoireF/ship-it/blob/main/SECURITY.md).
+        Questions and ideas are welcome in [Discussions](https://github.com/GregoireF/ship-it/discussions).
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: The command you ran and what ship printed. Paste text rather than screenshots.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How can we reproduce it?
+      description: The smallest sequence of commands, starting from a new repository (`git init`) when you can.
+      placeholder: |
+        git init demo && cd demo
+        echo hello > a.txt
+        ship plan
+    validations:
+      required: true
+  - type: input
+    id: ship-version
+    attributes:
+      label: ship version
+      description: Output of `ship version`.
+    validations:
+      required: true
+  - type: input
+    id: git-version
+    attributes:
+      label: git version
+      description: Output of `git --version`.
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - Windows (WSL)
+        - macOS
+        - Linux
+        - Other (say which below)
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where did you run ship?
+      multiple: true
+      options:
+        - Terminal (CLI)
+        - VS Code extension
+        - MCP server (AI agent)
+        - CI (Docker image or binary)
+    validations:
+      required: true
+  - type: textarea
+    id: trace
+    attributes:
+      label: Run timeline (optional)
+      description: |
+        `ship trace` prints the steps of the last run (`ship trace --list` lists the runs kept, `ship trace <run_id>` shows one).
+        ship removes paths, e-mail addresses and tokens from its logs, but read the output before you paste it.
+      render: text
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else?
+      description: OS version, how you installed ship, a link to a public repository where it happens…

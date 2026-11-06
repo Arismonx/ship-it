@@ -1,0 +1,16 @@
+⛵ ship stack · 3 couches sur main, du bas vers le haut
+
+  Touches
+    Entrée           livrer (dans un champ texte : ligne suivante)
+    Ctrl+Entrée, F2  livrer depuis n'importe où, champ texte compris
+    Ctrl+L           commit local seulement : ni push ni pull request
+    ↑ ↓              ligne précédente ou suivante
+    Tab, Maj+Tab     couche suivante ou précédente
+    Maj+↑ ↓, K J     sur une couche : la monter ou la descendre dans la liste
+                     sur un fichier : le passer à la couche au-dessus ou dessous
+    1 à 9            sur un fichier : le passer à cette couche
+    ?                cette aide (hors d'un champ texte)
+    Échap, Ctrl+C    annuler : rien ne change
+
+  La liste commence par la couche du bas, posée sur la branche par défaut.
+  N'importe quelle touche ferme cette aide.

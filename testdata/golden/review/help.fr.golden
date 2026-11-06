@@ -1,0 +1,14 @@
+⛵ ship · main → feat/add-vat-rate
+
+  Touches
+    Entrée           livrer (dans un champ texte : champ suivant)
+    Ctrl+Entrée, F2  livrer depuis n'importe où, champ texte compris
+    Ctrl+L           commit local seulement : ni push ni pull request
+    Tab, Maj+Tab     champ suivant ou précédent
+    ↑ ↓              se déplacer dans les fichiers et les parties
+    Espace           cocher ou décocher un fichier ; livrer une seule partie
+    ← →              replier ou déplier les fichiers
+    ?                cette aide (hors d'un champ texte)
+    Échap, Ctrl+C    annuler : rien ne change
+
+  N'importe quelle touche ferme cette aide.

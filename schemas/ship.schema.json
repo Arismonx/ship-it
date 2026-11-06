@@ -1,0 +1,1176 @@
+{
+  "$id": "https://raw.githubusercontent.com/GregoireF/ship-it/main/schemas/ship.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Settings of ship-it for this repository. Every key is optional: a missing key keeps its default. Comments and trailing commas are allowed (JSONC).",
+  "properties": {
+    "$schema": {
+      "description": "JSON Schema of this file, for editor completion.",
+      "type": "string"
+    },
+    "extends": {
+      "description": "Presets applied before this file, in order: built-in (ship-it:recommended), a .json file relative to this file's root, or a file of a GitHub repository pinned to a full commit SHA.",
+      "items": {
+        "anyOf": [
+          {
+            "pattern": "^ship-it:[a-z][a-z0-9-]*$"
+          },
+          {
+            "pattern": "^github:[A-Za-z0-9-]+/[A-Za-z0-9._-]+/.+\\.jsonc?@[0-9a-f]{40}$"
+          },
+          {
+            "pattern": "^(\\./)?[^/\\\\:][^\\\\:]*\\.jsonc?$"
+          }
+        ],
+        "type": "string"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "github": {
+      "additionalProperties": false,
+      "properties": {
+        "labels": {
+          "additionalProperties": false,
+          "properties": {
+            "areas": {
+              "default": [],
+              "description": "Names of area/ labels, usually the commit scopes.",
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "uniqueItems": true
+            },
+            "taxonomy": {
+              "default": "ship-it",
+              "description": "Label set to maintain.",
+              "enum": [
+                "ship-it",
+                "none"
+              ],
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "managedBy": {
+          "default": "",
+          "description": "Tool already managing this repository (opentofu, terraform…): ship sync then only reports differences.",
+          "type": "string"
+        },
+        "project": {
+          "additionalProperties": false,
+          "properties": {
+            "dateField": {
+              "default": "",
+              "description": "Date field that receives the milestone's due date, such as \"Target date\" (for the Roadmap view). Empty: off.",
+              "type": "string"
+            },
+            "done": {
+              "default": "Done",
+              "description": "Status of a closed roadmap issue.",
+              "type": "string"
+            },
+            "inProgress": {
+              "default": "In progress",
+              "description": "Status ship publish sets when it opens a pull request that closes an issue of the project.",
+              "type": "string"
+            },
+            "phaseField": {
+              "default": "",
+              "description": "Single-select field that receives the milestone's title, such as \"Phase\"; its options must exist (the REST API cannot add them). Empty: off.",
+              "type": "string"
+            },
+            "statusField": {
+              "default": "Status",
+              "description": "Single-select field holding the status. Empty: the status is left alone.",
+              "type": "string"
+            },
+            "todo": {
+              "default": "Todo",
+              "description": "Status of an open roadmap issue that has none yet (a status set by hand is kept).",
+              "type": "string"
+            },
+            "url": {
+              "default": "",
+              "description": "GitHub Project (v2) to keep up to date: its URL (https://github.com/orgs/acme/projects/7, https://github.com/users/ada/projects/3) or owner/number (acme/7). Empty: no project. The token needs the project scope (gh auth refresh -s project).",
+              "pattern": "^(https://[A-Za-z0-9.-]+/(orgs|users)/[A-Za-z0-9-]+/projects/[1-9][0-9]*(/views/[0-9]+)?/?|[A-Za-z0-9-]+/[1-9][0-9]*)?$",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "overrides": {
+      "description": "Settings for a part of the repository, in order (a later match wins). An override applies to a delivery when every one of its files matches one of the patterns.",
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "paths": {
+            "description": "Glob patterns relative to the repository root: \"docs/**\", \"*.md\" (a name matches at any depth), \"apps/*/src/**\".",
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "ship": {
+            "additionalProperties": false,
+            "properties": {
+              "branches": {
+                "additionalProperties": false,
+                "properties": {
+                  "issue": {
+                    "default": "first",
+                    "description": "\"first\" starts the branch description with the issue number or tracker ticket (feat/42-add-login), \"none\" leaves it out.",
+                    "enum": [
+                      "first",
+                      "none"
+                    ],
+                    "type": "string"
+                  },
+                  "maxLength": {
+                    "default": 32,
+                    "description": "Longest description part of a branch name, after the prefix and the issue number.",
+                    "minimum": 8,
+                    "type": "integer"
+                  },
+                  "maxWords": {
+                    "default": 4,
+                    "description": "Words kept from the subject in a branch name (stop words such as \"the\" are dropped first).",
+                    "minimum": 1,
+                    "type": "integer"
+                  }
+                },
+                "type": "object"
+              },
+              "commits": {
+                "additionalProperties": false,
+                "properties": {
+                  "bodyWidth": {
+                    "default": 72,
+                    "description": "Column at which commit bodies (the why) are wrapped.",
+                    "minimum": 40,
+                    "type": "integer"
+                  },
+                  "gitmoji": {
+                    "default": "auto",
+                    "description": "Where the gitmoji goes: \"auto\" follows the repository's last 50 commits (ship-it's \"first\" when fewer than 5 are conventional), \"first\" (✨ feat: x), \"after-type\" (feat: ✨ x) or \"none\" (feat: x).",
+                    "enum": [
+                      "auto",
+                      "first",
+                      "after-type",
+                      "none"
+                    ],
+                    "type": "string"
+                  },
+                  "headerMaxLength": {
+                    "default": 72,
+                    "description": "Longest title, gitmoji included (✨ feat(scope): subject). The planner drops the scope of a longer one.",
+                    "minimum": 30,
+                    "type": "integer"
+                  },
+                  "scopeFrom": {
+                    "default": "folders",
+                    "description": "Where the planner takes the scope from: \"folders\", the deepest folder the changed files share, or \"none\" (you write it).",
+                    "enum": [
+                      "folders",
+                      "none"
+                    ],
+                    "type": "string"
+                  },
+                  "scopeRequired": {
+                    "default": false,
+                    "description": "Refuse a title without a scope.",
+                    "type": "boolean"
+                  },
+                  "scopes": {
+                    "default": [],
+                    "description": "Scopes a title may use; empty: any scope. The planner drops a scope that is not listed.",
+                    "items": {
+                      "pattern": "^[a-z0-9][a-z0-9._/-]*$",
+                      "type": "string"
+                    },
+                    "type": "array",
+                    "uniqueItems": true
+                  },
+                  "sign": {
+                    "default": "auto",
+                    "description": "Sign commits: \"auto\" follows git's commit.gpgSign, \"always\" signs (git commit -S) and refuses to commit without a signing key (user.signingKey), \"never\" does not sign (--no-gpg-sign). Rebases and merges made before a publication follow it too.",
+                    "enum": [
+                      "auto",
+                      "always",
+                      "never"
+                    ],
+                    "type": "string"
+                  },
+                  "signoff": {
+                    "default": "auto",
+                    "description": "Add a Signed-off-by trailer (DCO) with the committer's identity, as git commit -s does. \"auto\": when the repository asks for it, that is when most of its last 50 commits carry one, its CONTRIBUTING file mentions the DCO or Signed-off-by, or it configures the DCO app (.github/dco.yml).",
+                    "enum": [
+                      "auto",
+                      "always",
+                      "never"
+                    ],
+                    "type": "string"
+                  },
+                  "subjectMaxLength": {
+                    "default": 50,
+                    "description": "Longest subject, in characters (after \"type(scope): \"; a tracker ticket at the end does not count).",
+                    "minimum": 20,
+                    "type": "integer"
+                  },
+                  "types": {
+                    "additionalProperties": {
+                      "oneOf": [
+                        {
+                          "const": false,
+                          "description": "Remove this built-in type."
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "branchPrefix": {
+                              "description": "Conventional Branch prefix of its branches, such as feat or chore.",
+                              "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+                              "type": "string"
+                            },
+                            "emoji": {
+                              "description": "Gitmoji of the type, written in titles.",
+                              "minLength": 1,
+                              "pattern": "^\\S+$",
+                              "type": "string"
+                            },
+                            "label": {
+                              "description": "Kind of its pull requests, after \"kind/\"; \"\" for none.",
+                              "pattern": "^([a-z0-9]+(?:[.-][a-z0-9]+)*)?$",
+                              "type": "string"
+                            },
+                            "release": {
+                              "description": "Version increment of its commits: major, minor, patch or none (built-in: feat minor; fix, perf, security and revert patch; the others none). A breaking change is always major.",
+                              "enum": [
+                                "none",
+                                "patch",
+                                "minor",
+                                "major"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "default": {},
+                    "description": "Changes to the built-in commit types, by type: {\"emoji\", \"branchPrefix\", \"label\", \"release\"} changes a type or adds one (a new type needs an emoji and a branch prefix), false removes a built-in type. label is the kind/ label of its pull requests (\"\": none); release its version increment (major, minor, patch or none; a breaking change is always major). ship types lists the result.",
+                    "propertyNames": {
+                      "pattern": "^[a-z]+$"
+                    },
+                    "type": "object"
+                  }
+                },
+                "type": "object"
+              },
+              "gates": {
+                "additionalProperties": false,
+                "properties": {
+                  "allowSkip": {
+                    "default": true,
+                    "description": "Accept --skip-gates (troubleshooting). false: the checks always run before a push.",
+                    "type": "boolean"
+                  },
+                  "beforeCommit": {
+                    "default": false,
+                    "description": "Also run the checks before the commit of ship and ship_deliver: a red check refuses the commit. Off by default, so that a commit stays instant and the checks run once, before the push.",
+                    "type": "boolean"
+                  },
+                  "enabled": {
+                    "default": true,
+                    "description": "Run the project's own checks for each ecosystem it uses (the package.json scripts lint, typecheck and test; gofmt, go vet and go test; cargo fmt, clippy and test; and so on for Python, PHP, Ruby, JVM and .NET) before every push. ship check gates runs them on demand, and beforeCommit before the commit too. false: no check runs.",
+                    "type": "boolean"
+                  }
+                },
+                "type": "object"
+              },
+              "git": {
+                "additionalProperties": false,
+                "properties": {
+                  "remote": {
+                    "default": "origin",
+                    "description": "Remote ship fetches from and pushes to, and whose GitHub repository it works with. In a fork, pull requests still open on the parent repository.",
+                    "pattern": "^[A-Za-z0-9_][A-Za-z0-9._-]*$",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "issues": {
+                "additionalProperties": false,
+                "properties": {
+                  "keyword": {
+                    "default": "Closes",
+                    "description": "Keyword linking the issue in the pull request body.",
+                    "enum": [
+                      "Closes",
+                      "Fixes",
+                      "Resolves",
+                      "Refs"
+                    ],
+                    "type": "string"
+                  },
+                  "trackerKeys": {
+                    "default": [],
+                    "description": "Project keys of an external tracker (Jira, Linear), such as ACME: a ticket ACME-123 in the branch name ends the commit and pull request titles, \"(ACME-123)\", and the branch keeps it in upper case.",
+                    "items": {
+                      "pattern": "^[A-Z][A-Z0-9_]+$",
+                      "type": "string"
+                    },
+                    "type": "array",
+                    "uniqueItems": true
+                  }
+                },
+                "type": "object"
+              },
+              "logs": {
+                "additionalProperties": false,
+                "properties": {
+                  "blackBoxBytes": {
+                    "default": 1048576,
+                    "description": "Size in bytes of the in-memory black box (DEBUG records of the run), written to disk only when a run fails. At least 64 KiB.",
+                    "minimum": 65536,
+                    "type": "integer"
+                  },
+                  "keepRuns": {
+                    "default": 20,
+                    "description": "Number of past runs whose journal is kept in each log directory (.git/ship/logs, or the user log directory).",
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "maxBytes": {
+                    "default": 10485760,
+                    "description": "Total size in bytes kept in each log directory; the oldest runs go first. At least 1 MiB.",
+                    "minimum": 1048576,
+                    "type": "integer"
+                  }
+                },
+                "type": "object"
+              },
+              "publish": {
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "default": "auto",
+                    "description": "Whether ship pushes and opens the pull request after committing: \"auto\", or \"never\" (as --local; ship publish publishes later).",
+                    "enum": [
+                      "auto",
+                      "never"
+                    ],
+                    "type": "string"
+                  },
+                  "update": {
+                    "default": "rebase",
+                    "description": "How a branch behind its base is brought up to date before publishing: \"rebase\" replays it on the base (the push then uses a lease), \"merge\" merges the base into it (no rewrite, a normal push), \"none\" publishes it as it is. A checkpoint comes first; on a conflict ship cancels and publishes as it is.",
+                    "enum": [
+                      "rebase",
+                      "merge",
+                      "none"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "pullRequest": {
+                "additionalProperties": false,
+                "properties": {
+                  "assignSelf": {
+                    "default": false,
+                    "description": "Assign a new pull request to its author.",
+                    "type": "boolean"
+                  },
+                  "base": {
+                    "default": "",
+                    "description": "Base branch of new pull requests, and the branch ship brings a branch up to date with; empty: the default branch of the repository on GitHub (of the parent repository, in a fork). Closing keywords only work on the default branch: on another base, the issue is linked with Refs.",
+                    "pattern": "^([A-Za-z0-9_][A-Za-z0-9._/-]*)?$",
+                    "type": "string"
+                  },
+                  "draft": {
+                    "default": "unattended",
+                    "description": "When a new pull request is a draft: \"unattended\" when nobody reviewed the plan in a terminal (--yes), \"always\", or \"never\". Work in progress commits, ship publish --draft and AI agents always open a draft.",
+                    "enum": [
+                      "unattended",
+                      "always",
+                      "never"
+                    ],
+                    "type": "string"
+                  },
+                  "labelPrefixes": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "default": "kind/",
+                        "description": "Prefix of the kind labels: kind/feature, kind/bug… The commit types name the kinds (ship.commits.types.\u003ctype\u003e.label).",
+                        "type": "string"
+                      },
+                      "size": {
+                        "default": "size/",
+                        "description": "Prefix of the size labels: size/XS… (ship.pullRequest.sizes).",
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "labels": {
+                    "default": true,
+                    "description": "Add the kind and size labels the repository already has.",
+                    "type": "boolean"
+                  },
+                  "maxLines": {
+                    "default": 400,
+                    "description": "Changed lines (generated files excluded) above which the plan warns and suggests a split. Reviews lose effectiveness beyond about 400.",
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "milestone": {
+                    "default": "issue",
+                    "description": "\"issue\" puts a new pull request in the milestone of the issue it closes, \"none\" leaves milestones alone.",
+                    "enum": [
+                      "issue",
+                      "none"
+                    ],
+                    "type": "string"
+                  },
+                  "reviewers": {
+                    "default": [],
+                    "description": "Logins whose review is requested on a new pull request (never its author). A request GitHub refuses is a warning.",
+                    "items": {
+                      "pattern": "^[A-Za-z0-9](-?[A-Za-z0-9])*$",
+                      "type": "string"
+                    },
+                    "type": "array",
+                    "uniqueItems": true
+                  },
+                  "sections": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "issue": {
+                        "default": true,
+                        "description": "Link the issue (Closes #12) in ship's own pull request body.",
+                        "type": "boolean"
+                      },
+                      "testing": {
+                        "default": true,
+                        "description": "Write the Testing section (the checks that passed locally, the Tested: notes) in ship's own pull request body.",
+                        "type": "boolean"
+                      },
+                      "why": {
+                        "default": true,
+                        "description": "Write the why of the commits (their bodies) in ship's own pull request body.",
+                        "type": "boolean"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "sizes": {
+                    "additionalProperties": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "default": {
+                      "XS": 10,
+                      "S": 30,
+                      "M": 100,
+                      "L": 500,
+                      "XL": 1000,
+                      "XXL": 0
+                    },
+                    "description": "Size labels, by name (after the size prefix), and the number of changed lines, generated files excluded, under which each applies; 0 marks the size of everything larger. The default is Kubernetes' scale.",
+                    "minProperties": 1,
+                    "propertyNames": {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                    },
+                    "type": "object"
+                  },
+                  "teamReviewers": {
+                    "default": [],
+                    "description": "Teams of the repository's organisation, by slug, whose review is requested on a new pull request. A request GitHub refuses is a warning.",
+                    "items": {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+                      "type": "string"
+                    },
+                    "type": "array",
+                    "uniqueItems": true
+                  },
+                  "template": {
+                    "default": "auto",
+                    "description": "Pull request body: \"auto\" fills the repository's pull request template when it has one (as GitHub finds it on the default branch), \"ship\" always uses ship-it's format, or the path of a template in the repository (for a .github/PULL_REQUEST_TEMPLATE/ directory).",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "secrets": {
+                "additionalProperties": false,
+                "properties": {
+                  "allow": {
+                    "default": [],
+                    "description": "Findings accepted, by the fingerprint ship prints with each one (SHA-256 of the rule id, a NUL byte and the value), never by value: a value in a file would leak it.",
+                    "items": {
+                      "pattern": "^[0-9a-f]{64}$",
+                      "type": "string"
+                    },
+                    "type": "array",
+                    "uniqueItems": true
+                  },
+                  "disabledRules": {
+                    "default": [],
+                    "description": "Built-in rules turned off, by id.",
+                    "items": {
+                      "enum": [
+                        "private_key",
+                        "github_token",
+                        "aws_key",
+                        "anthropic_key",
+                        "openai_key",
+                        "groq_key",
+                        "google_key",
+                        "stripe_key",
+                        "slack_token",
+                        "npm_token",
+                        "url_with_password",
+                        "secret_assignment",
+                        "sensitive_file"
+                      ],
+                      "type": "string"
+                    },
+                    "type": "array",
+                    "uniqueItems": true
+                  },
+                  "ignorePaths": {
+                    "default": [],
+                    "description": "Glob patterns of files never scanned for secrets (false positives); dir/** for a whole directory.",
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array",
+                    "uniqueItems": true
+                  },
+                  "rules": {
+                    "default": [],
+                    "description": "Extra rules: an id, a Go regular expression (RE2) and the literal keywords a line must contain for the pattern to run (compared without case when the pattern has (?i)). The value reported is the first capture group, else the whole match.",
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "description": "Name shown with each finding; not the id of a built-in rule.",
+                          "pattern": "^[a-z][a-z0-9_]*$",
+                          "type": "string"
+                        },
+                        "keywords": {
+                          "description": "Literals a line must contain, one at least, for the pattern to run: they keep the scan fast.",
+                          "items": {
+                            "type": "string"
+                          },
+                          "type": "array",
+                          "uniqueItems": true
+                        },
+                        "pattern": {
+                          "description": "Go regular expression (RE2) matched against each added line; (?i) ignores case. It must not match an empty text.",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "keywords",
+                        "pattern"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array",
+                    "uniqueItems": true
+                  }
+                },
+                "type": "object"
+              },
+              "stack": {
+                "additionalProperties": false,
+                "properties": {
+                  "maxLayers": {
+                    "default": 5,
+                    "description": "Most layers ship stack splits the work into; the smaller areas are grouped in the top layer beyond it.",
+                    "minimum": 2,
+                    "type": "integer"
+                  },
+                  "rebase": {
+                    "default": "github",
+                    "description": "Who rebases the layers above a merged one: \"github\" (GitHub's own rebase, which creates signed replacement commits; ship stack sync only follows it) or \"local\" (ship stack sync rebases on this machine with your signing key, then pushes with a lease). A classic chain of pull requests is always rebased locally.",
+                    "enum": [
+                      "local",
+                      "github"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "tidy": {
+                "additionalProperties": false,
+                "properties": {
+                  "auto": {
+                    "default": true,
+                    "description": "Run ship tidy at the start of ship: leave a branch whose pull request was merged for the updated base, with the work in progress. ship tidy itself always runs.",
+                    "type": "boolean"
+                  },
+                  "deleteMerged": {
+                    "default": true,
+                    "description": "Delete the local branches whose pull request was merged and that hold nothing more (ship undo recreates them).",
+                    "type": "boolean"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "required": [
+          "paths"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "ship": {
+      "additionalProperties": false,
+      "properties": {
+        "branches": {
+          "additionalProperties": false,
+          "properties": {
+            "issue": {
+              "default": "first",
+              "description": "\"first\" starts the branch description with the issue number or tracker ticket (feat/42-add-login), \"none\" leaves it out.",
+              "enum": [
+                "first",
+                "none"
+              ],
+              "type": "string"
+            },
+            "maxLength": {
+              "default": 32,
+              "description": "Longest description part of a branch name, after the prefix and the issue number.",
+              "minimum": 8,
+              "type": "integer"
+            },
+            "maxWords": {
+              "default": 4,
+              "description": "Words kept from the subject in a branch name (stop words such as \"the\" are dropped first).",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        },
+        "commits": {
+          "additionalProperties": false,
+          "properties": {
+            "bodyWidth": {
+              "default": 72,
+              "description": "Column at which commit bodies (the why) are wrapped.",
+              "minimum": 40,
+              "type": "integer"
+            },
+            "gitmoji": {
+              "default": "auto",
+              "description": "Where the gitmoji goes: \"auto\" follows the repository's last 50 commits (ship-it's \"first\" when fewer than 5 are conventional), \"first\" (✨ feat: x), \"after-type\" (feat: ✨ x) or \"none\" (feat: x).",
+              "enum": [
+                "auto",
+                "first",
+                "after-type",
+                "none"
+              ],
+              "type": "string"
+            },
+            "headerMaxLength": {
+              "default": 72,
+              "description": "Longest title, gitmoji included (✨ feat(scope): subject). The planner drops the scope of a longer one.",
+              "minimum": 30,
+              "type": "integer"
+            },
+            "scopeFrom": {
+              "default": "folders",
+              "description": "Where the planner takes the scope from: \"folders\", the deepest folder the changed files share, or \"none\" (you write it).",
+              "enum": [
+                "folders",
+                "none"
+              ],
+              "type": "string"
+            },
+            "scopeRequired": {
+              "default": false,
+              "description": "Refuse a title without a scope.",
+              "type": "boolean"
+            },
+            "scopes": {
+              "default": [],
+              "description": "Scopes a title may use; empty: any scope. The planner drops a scope that is not listed.",
+              "items": {
+                "pattern": "^[a-z0-9][a-z0-9._/-]*$",
+                "type": "string"
+              },
+              "type": "array",
+              "uniqueItems": true
+            },
+            "sign": {
+              "default": "auto",
+              "description": "Sign commits: \"auto\" follows git's commit.gpgSign, \"always\" signs (git commit -S) and refuses to commit without a signing key (user.signingKey), \"never\" does not sign (--no-gpg-sign). Rebases and merges made before a publication follow it too.",
+              "enum": [
+                "auto",
+                "always",
+                "never"
+              ],
+              "type": "string"
+            },
+            "signoff": {
+              "default": "auto",
+              "description": "Add a Signed-off-by trailer (DCO) with the committer's identity, as git commit -s does. \"auto\": when the repository asks for it, that is when most of its last 50 commits carry one, its CONTRIBUTING file mentions the DCO or Signed-off-by, or it configures the DCO app (.github/dco.yml).",
+              "enum": [
+                "auto",
+                "always",
+                "never"
+              ],
+              "type": "string"
+            },
+            "subjectMaxLength": {
+              "default": 50,
+              "description": "Longest subject, in characters (after \"type(scope): \"; a tracker ticket at the end does not count).",
+              "minimum": 20,
+              "type": "integer"
+            },
+            "types": {
+              "additionalProperties": {
+                "oneOf": [
+                  {
+                    "const": false,
+                    "description": "Remove this built-in type."
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "branchPrefix": {
+                        "description": "Conventional Branch prefix of its branches, such as feat or chore.",
+                        "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+                        "type": "string"
+                      },
+                      "emoji": {
+                        "description": "Gitmoji of the type, written in titles.",
+                        "minLength": 1,
+                        "pattern": "^\\S+$",
+                        "type": "string"
+                      },
+                      "label": {
+                        "description": "Kind of its pull requests, after \"kind/\"; \"\" for none.",
+                        "pattern": "^([a-z0-9]+(?:[.-][a-z0-9]+)*)?$",
+                        "type": "string"
+                      },
+                      "release": {
+                        "description": "Version increment of its commits: major, minor, patch or none (built-in: feat minor; fix, perf, security and revert patch; the others none). A breaking change is always major.",
+                        "enum": [
+                          "none",
+                          "patch",
+                          "minor",
+                          "major"
+                        ],
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  }
+                ]
+              },
+              "default": {},
+              "description": "Changes to the built-in commit types, by type: {\"emoji\", \"branchPrefix\", \"label\", \"release\"} changes a type or adds one (a new type needs an emoji and a branch prefix), false removes a built-in type. label is the kind/ label of its pull requests (\"\": none); release its version increment (major, minor, patch or none; a breaking change is always major). ship types lists the result.",
+              "propertyNames": {
+                "pattern": "^[a-z]+$"
+              },
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
+        "gates": {
+          "additionalProperties": false,
+          "properties": {
+            "allowSkip": {
+              "default": true,
+              "description": "Accept --skip-gates (troubleshooting). false: the checks always run before a push.",
+              "type": "boolean"
+            },
+            "beforeCommit": {
+              "default": false,
+              "description": "Also run the checks before the commit of ship and ship_deliver: a red check refuses the commit. Off by default, so that a commit stays instant and the checks run once, before the push.",
+              "type": "boolean"
+            },
+            "enabled": {
+              "default": true,
+              "description": "Run the project's own checks for each ecosystem it uses (the package.json scripts lint, typecheck and test; gofmt, go vet and go test; cargo fmt, clippy and test; and so on for Python, PHP, Ruby, JVM and .NET) before every push. ship check gates runs them on demand, and beforeCommit before the commit too. false: no check runs.",
+              "type": "boolean"
+            }
+          },
+          "type": "object"
+        },
+        "git": {
+          "additionalProperties": false,
+          "properties": {
+            "remote": {
+              "default": "origin",
+              "description": "Remote ship fetches from and pushes to, and whose GitHub repository it works with. In a fork, pull requests still open on the parent repository.",
+              "pattern": "^[A-Za-z0-9_][A-Za-z0-9._-]*$",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "issues": {
+          "additionalProperties": false,
+          "properties": {
+            "keyword": {
+              "default": "Closes",
+              "description": "Keyword linking the issue in the pull request body.",
+              "enum": [
+                "Closes",
+                "Fixes",
+                "Resolves",
+                "Refs"
+              ],
+              "type": "string"
+            },
+            "trackerKeys": {
+              "default": [],
+              "description": "Project keys of an external tracker (Jira, Linear), such as ACME: a ticket ACME-123 in the branch name ends the commit and pull request titles, \"(ACME-123)\", and the branch keeps it in upper case.",
+              "items": {
+                "pattern": "^[A-Z][A-Z0-9_]+$",
+                "type": "string"
+              },
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "type": "object"
+        },
+        "logs": {
+          "additionalProperties": false,
+          "properties": {
+            "blackBoxBytes": {
+              "default": 1048576,
+              "description": "Size in bytes of the in-memory black box (DEBUG records of the run), written to disk only when a run fails. At least 64 KiB.",
+              "minimum": 65536,
+              "type": "integer"
+            },
+            "keepRuns": {
+              "default": 20,
+              "description": "Number of past runs whose journal is kept in each log directory (.git/ship/logs, or the user log directory).",
+              "minimum": 1,
+              "type": "integer"
+            },
+            "maxBytes": {
+              "default": 10485760,
+              "description": "Total size in bytes kept in each log directory; the oldest runs go first. At least 1 MiB.",
+              "minimum": 1048576,
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        },
+        "publish": {
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "default": "auto",
+              "description": "Whether ship pushes and opens the pull request after committing: \"auto\", or \"never\" (as --local; ship publish publishes later).",
+              "enum": [
+                "auto",
+                "never"
+              ],
+              "type": "string"
+            },
+            "update": {
+              "default": "rebase",
+              "description": "How a branch behind its base is brought up to date before publishing: \"rebase\" replays it on the base (the push then uses a lease), \"merge\" merges the base into it (no rewrite, a normal push), \"none\" publishes it as it is. A checkpoint comes first; on a conflict ship cancels and publishes as it is.",
+              "enum": [
+                "rebase",
+                "merge",
+                "none"
+              ],
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "pullRequest": {
+          "additionalProperties": false,
+          "properties": {
+            "assignSelf": {
+              "default": false,
+              "description": "Assign a new pull request to its author.",
+              "type": "boolean"
+            },
+            "base": {
+              "default": "",
+              "description": "Base branch of new pull requests, and the branch ship brings a branch up to date with; empty: the default branch of the repository on GitHub (of the parent repository, in a fork). Closing keywords only work on the default branch: on another base, the issue is linked with Refs.",
+              "pattern": "^([A-Za-z0-9_][A-Za-z0-9._/-]*)?$",
+              "type": "string"
+            },
+            "draft": {
+              "default": "unattended",
+              "description": "When a new pull request is a draft: \"unattended\" when nobody reviewed the plan in a terminal (--yes), \"always\", or \"never\". Work in progress commits, ship publish --draft and AI agents always open a draft.",
+              "enum": [
+                "unattended",
+                "always",
+                "never"
+              ],
+              "type": "string"
+            },
+            "labelPrefixes": {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "default": "kind/",
+                  "description": "Prefix of the kind labels: kind/feature, kind/bug… The commit types name the kinds (ship.commits.types.\u003ctype\u003e.label).",
+                  "type": "string"
+                },
+                "size": {
+                  "default": "size/",
+                  "description": "Prefix of the size labels: size/XS… (ship.pullRequest.sizes).",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "labels": {
+              "default": true,
+              "description": "Add the kind and size labels the repository already has.",
+              "type": "boolean"
+            },
+            "maxLines": {
+              "default": 400,
+              "description": "Changed lines (generated files excluded) above which the plan warns and suggests a split. Reviews lose effectiveness beyond about 400.",
+              "minimum": 1,
+              "type": "integer"
+            },
+            "milestone": {
+              "default": "issue",
+              "description": "\"issue\" puts a new pull request in the milestone of the issue it closes, \"none\" leaves milestones alone.",
+              "enum": [
+                "issue",
+                "none"
+              ],
+              "type": "string"
+            },
+            "reviewers": {
+              "default": [],
+              "description": "Logins whose review is requested on a new pull request (never its author). A request GitHub refuses is a warning.",
+              "items": {
+                "pattern": "^[A-Za-z0-9](-?[A-Za-z0-9])*$",
+                "type": "string"
+              },
+              "type": "array",
+              "uniqueItems": true
+            },
+            "sections": {
+              "additionalProperties": false,
+              "properties": {
+                "issue": {
+                  "default": true,
+                  "description": "Link the issue (Closes #12) in ship's own pull request body.",
+                  "type": "boolean"
+                },
+                "testing": {
+                  "default": true,
+                  "description": "Write the Testing section (the checks that passed locally, the Tested: notes) in ship's own pull request body.",
+                  "type": "boolean"
+                },
+                "why": {
+                  "default": true,
+                  "description": "Write the why of the commits (their bodies) in ship's own pull request body.",
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            },
+            "sizes": {
+              "additionalProperties": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "default": {
+                "XS": 10,
+                "S": 30,
+                "M": 100,
+                "L": 500,
+                "XL": 1000,
+                "XXL": 0
+              },
+              "description": "Size labels, by name (after the size prefix), and the number of changed lines, generated files excluded, under which each applies; 0 marks the size of everything larger. The default is Kubernetes' scale.",
+              "minProperties": 1,
+              "propertyNames": {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+              },
+              "type": "object"
+            },
+            "teamReviewers": {
+              "default": [],
+              "description": "Teams of the repository's organisation, by slug, whose review is requested on a new pull request. A request GitHub refuses is a warning.",
+              "items": {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+                "type": "string"
+              },
+              "type": "array",
+              "uniqueItems": true
+            },
+            "template": {
+              "default": "auto",
+              "description": "Pull request body: \"auto\" fills the repository's pull request template when it has one (as GitHub finds it on the default branch), \"ship\" always uses ship-it's format, or the path of a template in the repository (for a .github/PULL_REQUEST_TEMPLATE/ directory).",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "secrets": {
+          "additionalProperties": false,
+          "properties": {
+            "allow": {
+              "default": [],
+              "description": "Findings accepted, by the fingerprint ship prints with each one (SHA-256 of the rule id, a NUL byte and the value), never by value: a value in a file would leak it.",
+              "items": {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              "type": "array",
+              "uniqueItems": true
+            },
+            "disabledRules": {
+              "default": [],
+              "description": "Built-in rules turned off, by id.",
+              "items": {
+                "enum": [
+                  "private_key",
+                  "github_token",
+                  "aws_key",
+                  "anthropic_key",
+                  "openai_key",
+                  "groq_key",
+                  "google_key",
+                  "stripe_key",
+                  "slack_token",
+                  "npm_token",
+                  "url_with_password",
+                  "secret_assignment",
+                  "sensitive_file"
+                ],
+                "type": "string"
+              },
+              "type": "array",
+              "uniqueItems": true
+            },
+            "ignorePaths": {
+              "default": [],
+              "description": "Glob patterns of files never scanned for secrets (false positives); dir/** for a whole directory.",
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "uniqueItems": true
+            },
+            "rules": {
+              "default": [],
+              "description": "Extra rules: an id, a Go regular expression (RE2) and the literal keywords a line must contain for the pattern to run (compared without case when the pattern has (?i)). The value reported is the first capture group, else the whole match.",
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "description": "Name shown with each finding; not the id of a built-in rule.",
+                    "pattern": "^[a-z][a-z0-9_]*$",
+                    "type": "string"
+                  },
+                  "keywords": {
+                    "description": "Literals a line must contain, one at least, for the pattern to run: they keep the scan fast.",
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array",
+                    "uniqueItems": true
+                  },
+                  "pattern": {
+                    "description": "Go regular expression (RE2) matched against each added line; (?i) ignores case. It must not match an empty text.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "keywords",
+                  "pattern"
+                ],
+                "type": "object"
+              },
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "type": "object"
+        },
+        "stack": {
+          "additionalProperties": false,
+          "properties": {
+            "maxLayers": {
+              "default": 5,
+              "description": "Most layers ship stack splits the work into; the smaller areas are grouped in the top layer beyond it.",
+              "minimum": 2,
+              "type": "integer"
+            },
+            "rebase": {
+              "default": "github",
+              "description": "Who rebases the layers above a merged one: \"github\" (GitHub's own rebase, which creates signed replacement commits; ship stack sync only follows it) or \"local\" (ship stack sync rebases on this machine with your signing key, then pushes with a lease). A classic chain of pull requests is always rebased locally.",
+              "enum": [
+                "local",
+                "github"
+              ],
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "tidy": {
+          "additionalProperties": false,
+          "properties": {
+            "auto": {
+              "default": true,
+              "description": "Run ship tidy at the start of ship: leave a branch whose pull request was merged for the updated base, with the work in progress. ship tidy itself always runs.",
+              "type": "boolean"
+            },
+            "deleteMerged": {
+              "default": true,
+              "description": "Delete the local branches whose pull request was merged and that hold nothing more (ship undo recreates them).",
+              "type": "boolean"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "version": {
+      "default": 1,
+      "description": "Version of the file format.",
+      "enum": [
+        1
+      ],
+      "type": "integer"
+    }
+  },
+  "title": ".github/ship.json",
+  "type": "object"
+}

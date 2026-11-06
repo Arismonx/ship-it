@@ -1,0 +1,15 @@
+⛵ ship · main → feat/add-vat-rate
+
+› Title    ✨ feat(cart): add vat rate
+           ✓ valid · 26/72
+  Branch   feat/add-vat-rate
+           ✓ valid
+  Why?     optional
+  Tested?  optional
+
+  Files    ▾ 3/3 selected
+           [x] internal/cart/vat.go
+           [x] internal/cart/vat_test.go
+           [x] docs/vat.md
+
+Enter next · Ctrl+Enter/F2 ship · Ctrl+L commit only · Tab field · Esc cancel

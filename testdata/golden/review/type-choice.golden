@@ -1,0 +1,15 @@
+⛵ ship · main → chore/cache-vat-rates
+
+› Type     ›( ) refactor  ( ) fix
+           ✗ The project's commitlint refuses perf: pick a type (←/→, Space).
+  Title    ⚡️ perf(cart): cache vat rates
+           ✓ valid · 30/72
+  Branch   chore/cache-vat-rates
+           ✓ valid
+  Why?     optional
+  Tested?  optional
+
+  Files    ▾ 1/1 selected
+           [x] internal/cart/vat.go
+
+Enter ship · Ctrl+L commit only · Tab field · Space toggle · ? help · Esc cancel

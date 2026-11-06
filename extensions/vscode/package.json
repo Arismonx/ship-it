@@ -1,0 +1,57 @@
+{
+  "name": "ship-it",
+  "displayName": "ship-it",
+  "description": "Code; ship-it handles git and GitHub: conventional commits, pull requests, undo.",
+  "version": "0.1.0",
+  "publisher": "GregoireF",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GregoireF/ship-it"
+  },
+  "engines": {
+    "vscode": "^1.101.0"
+  },
+  "categories": ["SCM Providers"],
+  "main": "./dist/extension.js",
+  "activationEvents": ["onStartupFinished"],
+  "contributes": {
+    "commands": [
+      { "command": "shipIt.ship", "title": "Ship", "category": "ship-it", "icon": "$(rocket)" },
+      { "command": "shipIt.undo", "title": "Undo the last operation", "category": "ship-it", "icon": "$(discard)" },
+      { "command": "shipIt.status", "title": "Where the work stands", "category": "ship-it" }
+    ],
+    "keybindings": [
+      { "command": "shipIt.ship", "key": "ctrl+alt+s", "mac": "cmd+alt+s" }
+    ],
+    "menus": {
+      "scm/title": [
+        { "command": "shipIt.ship", "group": "navigation", "when": "scmProvider == git" }
+      ]
+    },
+    "configuration": {
+      "title": "ship-it",
+      "properties": {
+        "shipIt.path": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Path of the `ship` binary. Empty: the one bundled with the extension, else `ship` from the `PATH`."
+        }
+      }
+    },
+    "mcpServerDefinitionProviders": [
+      { "id": "ship-it.mcp", "label": "ship-it" }
+    ]
+  },
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --platform=node --format=cjs --target=node20 --external:vscode --outfile=dist/extension.js",
+    "typecheck": "tsc --noEmit",
+    "test": "esbuild src/test/*.test.ts --bundle --platform=node --format=cjs --target=node20 --external:vscode --outdir=out/test && node --test \"out/test/*.test.js\""
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/vscode": "1.101.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
+  }
+}

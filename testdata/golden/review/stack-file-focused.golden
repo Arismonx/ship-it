@@ -1,0 +1,27 @@
+⛵ ship stack · 3 layers on main, bottom first
+
+  Layer 1 · 2 files, 310 lines
+    Title   ✨ feat(api): add the cart
+            ✓ valid · 25/72
+    Branch  feat/add-the-cart
+            ✓ valid
+    Files   api/cart.go
+          › api/cart_test.go
+
+  Layer 2 · 1 file, 120 lines
+    Title   ✨ feat(web): add the cart page
+            ✓ valid · 30/72
+    Branch  feat/add-the-cart-page
+            ✓ valid
+    Files   web/cart.ts
+
+  Layer 3 · 1 file, 40 lines
+    Title   📝 docs: describe the cart
+            ✓ valid · 25/72
+    Branch  chore/describe-the-cart
+            ✓ valid
+    Files   docs/cart.md
+
+Not in any layer, left uncommitted: README.md
+
+Enter ship · Shift+↑↓ or 1-3 move the file · ? help · Esc cancel

@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Grégoire Favreau
+#
+# Issue form for documentation problems. "documentation" is GitHub's default
+# label, ignored once `ship sync` has renamed it to kind/docs.
+name: Documentation
+description: Something in the docs is wrong, missing or unclear.
+labels: ["kind/docs", "documentation", "triage/needs-triage"]
+body:
+  - type: input
+    id: where
+    attributes:
+      label: Which page or section?
+      description: A link, a file path (for example `docs/reference/conventions.md`) or the output of `ship <command> --help`.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong or missing?
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested wording
+      description: Optional. A pull request is welcome too, see CONTRIBUTING.md.

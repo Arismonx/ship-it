@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "docs": {
+      "type": "stdio",
+      "command": "python",
+      "args": [
+        "mcp-server.py"
+      ]
+    },
+    "ship-it": {
+      "type": "stdio",
+      "command": "ship",
+      "args": [
+        "mcp"
+      ]
+    }
+  }
+}

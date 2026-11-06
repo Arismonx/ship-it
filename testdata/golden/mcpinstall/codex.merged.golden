@@ -1,0 +1,13 @@
+# Codex settings of the team
+model = "gpt-5"
+
+[mcp_servers.context7]
+command = "npx" # keep this comment
+args = ["-y", "@upstash/context7-mcp"]
+
+[mcp_servers.context7.env]
+MY_ENV_VAR = "MY_ENV_VALUE"
+
+[mcp_servers.ship-it]
+command = "ship"
+args = ["mcp"]

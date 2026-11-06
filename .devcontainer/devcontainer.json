@@ -1,0 +1,37 @@
+// Dev container of ship-it contributors, local (VS Code Dev Containers) or in
+// GitHub Codespaces. See CONTRIBUTING.md. Reference:
+// https://containers.dev/implementors/json_reference/
+{
+  "name": "ship-it",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "features": {
+    // Node.js 22, the version of the extension CI job (.github/workflows/ci.yml).
+    // The base image already has nvm: the feature installs 22 and makes it the default.
+    "ghcr.io/devcontainers/features/node:2.1.1": {
+      "version": "22"
+    }
+  },
+  "containerEnv": {
+    // The image sets GOTOOLCHAIN=local (Go 1.27.2); "auto" lets go fetch the
+    // exact toolchain of go.mod (checksum-verified), as setup-go does in CI.
+    "GOTOOLCHAIN": "auto"
+  },
+  "remoteUser": "vscode",
+  // Parallel, each in its own terminal.
+  "postCreateCommand": {
+    "go": "go mod download",
+    "extension": "cd extensions/vscode && npm ci"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.Go",
+        "EditorConfig.EditorConfig",
+        "streetsidesoftware.code-spell-checker",
+        "GitHub.vscode-github-actions"
+      ]
+    }
+  }
+}
