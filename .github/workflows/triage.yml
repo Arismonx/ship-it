@@ -41,10 +41,7 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read
-      # List open pull requests, their commits and files, and add or remove
-      # their labels: on a pull request, the job token needs pull-requests:
-      # write for that, issues: write is not enough (403).
-      pull-requests: write
+      pull-requests: write # list pull requests and their files, and label them (issues: write alone gets a 403)
       issues: write # labels on issues
     steps:
       # The base branch, never the pull request's code: it runs with a token
