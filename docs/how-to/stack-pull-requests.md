@@ -16,7 +16,7 @@ From the default branch, with the work uncommitted:
 ship stack
 ```
 
-ship splits the work into layers by area, the way the size warning does (the largest area at the bottom). Layers by folder are only a starting point: the review screen lets you reorder them and move files from one to another. ship shows them on a review screen like the one of `ship`, the bottom layer first:
+ship splits the work into layers by area, the way the size warning does (the largest area at the bottom). A test file stays with the file it tests when both are part of the work (`vat_test.go` with `vat.go`, `cart.test.ts` with `cart.ts`, `test_tax.py` with `tax.py`), so no layer holds tests for code it does not have. Layers by folder are only a starting point: the review screen lets you reorder them and move files from one to another. ship shows them on a review screen like the one of `ship`, the bottom layer first:
 
 ```text
 ⛵ ship stack · 3 layers on main, bottom first

@@ -52,10 +52,21 @@ func Suggest(files []File, maxLines int) []Group {
 // Areas groups files by topic directory, biggest first, whatever their size:
 // the parts of a split, and the layers of a stack.
 func Areas(files []File) []Group {
+	changed := make(map[string]bool, len(files))
+	for _, f := range files {
+		changed[f.Path] = true
+	}
 	byKey := map[string]*Group{}
 	var keys []string
 	for _, f := range files {
-		key := topic(f.Path)
+		// A test goes with the file it tests when that file is part of the
+		// work: a layer of tests alone would not build (vat_test.go calls
+		// what vat.go adds), and both are the same topic.
+		p := f.Path
+		if s := subject(p); s != "" && changed[s] {
+			p = s
+		}
+		key := topic(p)
 		g, ok := byKey[key]
 		if !ok {
 			g = &Group{Path: key}
@@ -91,6 +102,31 @@ func topic(p string) string {
 		return p // a root file is its own topic
 	}
 	return strings.Join(segments[:len(segments)-1], "/") + "/"
+}
+
+// testSuffixes are the endings of test files next to the file they test,
+// with the ending of that file: Go, JavaScript and TypeScript, Python.
+var testSuffixes = [][2]string{
+	{"_test.go", ".go"},
+	{".test.ts", ".ts"}, {".spec.ts", ".ts"}, {".test.tsx", ".tsx"}, {".spec.tsx", ".tsx"},
+	{".test.js", ".js"}, {".spec.js", ".js"}, {".test.jsx", ".jsx"}, {".spec.jsx", ".jsx"},
+	{".test.mjs", ".mjs"}, {".spec.mjs", ".mjs"},
+	{"_test.py", ".py"},
+}
+
+// subject is the file a test file tests, in the same directory (vat_test.go →
+// vat.go, test_vat.py → vat.py), or "" when p is not a test file.
+func subject(p string) string {
+	dir, base := path.Split(p)
+	for _, s := range testSuffixes {
+		if stem, ok := strings.CutSuffix(base, s[0]); ok && stem != "" {
+			return dir + stem + s[1]
+		}
+	}
+	if stem, ok := strings.CutPrefix(base, "test_"); ok && strings.HasSuffix(stem, ".py") && stem != ".py" {
+		return dir + stem
+	}
+	return ""
 }
 
 // Matches reports whether p is selected by one of the --only selections: a

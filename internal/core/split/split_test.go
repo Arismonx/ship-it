@@ -33,6 +33,40 @@ func TestSuggest(t *testing.T) {
 	}
 }
 
+// TestAreasKeepTestsWithTheirCode: at the root every file is its own topic,
+// so a test and the code it tests became two layers of a stack, the test
+// alone at the bottom, which did not build (seen on ship-it-sandbox).
+func TestAreasKeepTestsWithTheirCode(t *testing.T) {
+	got := Areas([]File{
+		{"vat_test.go", 9}, {"vat.go", 7}, {"docs/pricing.md", 3},
+		{"cart.test.ts", 4}, {"cart.ts", 2}, {"test_tax.py", 5}, {"tax.py", 1},
+		{"orphan_test.go", 6}, // its subject is not part of the work
+	})
+	want := []Group{
+		{Path: "vat.go", Lines: 16, Files: []string{"vat_test.go", "vat.go"}},
+		{Path: "cart.ts", Lines: 6, Files: []string{"cart.test.ts", "cart.ts"}},
+		{Path: "orphan_test.go", Lines: 6, Files: []string{"orphan_test.go"}},
+		{Path: "tax.py", Lines: 6, Files: []string{"test_tax.py", "tax.py"}},
+		{Path: "docs/", Lines: 3, Files: []string{"docs/pricing.md"}},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("Areas =\n%+v\nwant\n%+v", got, want)
+	}
+}
+
+func TestSubject(t *testing.T) {
+	for p, want := range map[string]string{
+		"vat_test.go": "vat.go", "src/api/vat_test.go": "src/api/vat.go",
+		"web/cart.spec.tsx": "web/cart.tsx", "lib/a.test.mjs": "lib/a.mjs",
+		"test_tax.py": "tax.py", "pkg/tax_test.py": "pkg/tax.py",
+		"vat.go": "", "_test.go": "", "test_.py": "", "README.md": "", "testdata/x.go": "",
+	} {
+		if got := subject(p); got != want {
+			t.Errorf("subject(%s) = %q, want %q", p, got, want)
+		}
+	}
+}
+
 func TestTopic(t *testing.T) {
 	for p, want := range map[string]string{
 		"internal/core/plan/plan.go": "internal/core/",
