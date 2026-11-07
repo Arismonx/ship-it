@@ -9,7 +9,7 @@
 
 It serves people as much as agents. One command, `ship`, creates the branch, the commit and the pull request the way your repository expects. Your checks and a secret scan run before the push, `ship check gates` runs the checks whenever you want, and a repository can ask for them before each commit too. `ship undo` takes it all back.
 
-<!-- Demo GIF: add it here once it is recorded. -->
+<img alt="A terminal: ship plan proposes a title and a branch for a new Go file, ship --local shows the review screen and commits on feat/add-vat, ship undo takes the commit and the branch back, and the file is uncommitted again" src="assets/demo/demo.gif" width="760">
 
 0.1, early: works on Linux, macOS and Windows, with GitHub. What comes next is in the [roadmap](ROADMAP.md).
 
