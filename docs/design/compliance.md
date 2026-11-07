@@ -45,7 +45,7 @@ See [ADR-0008](../adr/0008-license.md) (Apache-2.0 since 2026-11-06, EUPL-1.2 be
 | Antivirus false positives | Signing, proactive submission to vendors, VirusTotal check with every release | Known for Go (Go FAQ) |
 | WinGet | **Portable** manifest with `--scope user` (no admin) | ❓ confirm that a portable package is accepted on winget-pkgs |
 | Scoop | `bucket/` folder of `GregoireF/homebrew-tap`, pushed by GoReleaser | Installed in the user profile, no admin |
-| Homebrew | Cask in the tap `GregoireF/homebrew-tap`, pushed by GoReleaser | |
+| Homebrew | Formula `Formula/ship.rb` in the tap `GregoireF/homebrew-tap`, written by `scripts/homebrew-formula.sh` and pushed by the release job (a formula, not a cask: see [workflows](workflows.md)) | |
 | Linux | `.tar.gz`, `.deb`, `.rpm` | |
 | **npm** (decision H5) | `npx`/`pnpm dlx` on **npmjs.com**, one package per platform in `optionalDependencies` (the `GregoireF/addlicense-npm` model) | Package name to check on npmjs; triggered by `repository_dispatch` as for addlicense |
 | Install script | `scripts/install.ps1` / `scripts/install.sh` to `%LOCALAPPDATA%\Programs\ship` / `~/.local/bin` | No admin; SHA-256 check, cosign check when installed |

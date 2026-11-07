@@ -3,7 +3,7 @@
 > User goal: **maximum coverage of every kind**. Here, "coverage" does not only mean a percentage of lines: every promise of the product (undo, errors, conventions, surfaces, performance, docs) must be **proven by an automated test**.
 > Legend: ✅ primary source · 🟡 secondary · ❓ to verify.
 >
-> Status: the pyramid below is the proposal of phase 0. testscript was not adopted, so layer 5 is not done as written: the situations ship handles are tested end to end in `cmd/ship/*_test.go`, with real git, a bare remote and a fake GitHub HTTP server (layer 6 lives there too, not in `internal/e2e/`). The RPC contract of layer 7 was dropped with `ship rpc` ([ADR-0010](../adr/0010-surfaces.md)). Merged coverage, mutation testing, the nightly real E2E and the agent evals are not done yet.
+> Status: the pyramid below is the proposal of phase 0. testscript was not adopted, so layer 5 is not done as written: the situations ship handles are tested end to end in `cmd/ship/*_test.go`, with real git, a bare remote and a fake GitHub HTTP server (layer 6 lives there too, not in `internal/e2e/`). The RPC contract of layer 7 was dropped with `ship rpc` ([ADR-0010](../adr/0010-surfaces.md)). Since 2026-11-07, the merged coverage is sent to Codecov by `ci.yml` and the real E2E of layer 8 runs every night (`nightly-real.yml`, [workflows](workflows.md) §11); mutation testing and the agent evals are not done yet.
 
 ## 1. Research
 

@@ -315,6 +315,5 @@ How `ship` talks to a person in a terminal. These are personal choices: the user
 
 ## Planned
 
-- `ship config get|set|unset|explain` (being implemented): change a setting without editing JSON by hand, comments and order preserved, undoable with `ship undo`; `explain` gives the documentation, the value of every layer and why the effective one wins.
 - `ship.conventions.source`: the project's own conventions (commitlint, rulesets, history) already win and ship-it says so (above); the setting would only choose between them when they disagree, if that ever happens.
 - Identity per context (`git.email` for a client).

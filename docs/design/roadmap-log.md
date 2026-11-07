@@ -63,7 +63,7 @@
 - [x] `--dry-run` on every command that writes (`ship`, `publish`, `undo`, `tidy`, `fix`, `sync`, `init`, `config set|unset`, `mcp install`, `label`) and `dryRun` on the MCP tools that write; nothing written, proven by tests
 - [x] `✨ type(scope): subject` format, `--json` mode, stable exit codes
 - [x] `ship check signoff` (DCO, git's trailer rules) and `ship label --pr`
-- [x] ship-it release workflow written: GoReleaser binaries, checksums signed with cosign, SBOM, attestations, approval in an environment (not run yet)
+- [x] ship-it release workflow written: GoReleaser binaries, checksums signed with cosign, SBOM, attestations, approval in an environment (first run for v0.1.0, 2026-11-07)
 - [ ] First ship-it release published (unsigned on Windows at first)
 
 **Exit:** a junior developer ships a clean PR from Windows **without gh or Node**, and the draft's full journey is reproduced.
@@ -134,7 +134,7 @@
 - [ ] WinGet (portable, `--scope user`), deb/rpm
 - [x] Homebrew formula (pushed by the release workflow) and Scoop manifest (pushed by GoReleaser) to `GregoireF/homebrew-tap`, install scripts without admin rights (`scripts/install.sh`, `scripts/install.ps1`: SHA-256 check, cosign check when installed; not run against a real release yet)
 - [x] Docker image `ghcr.io/gregoiref/ship` (Alpine + git, non-root, OCI labels, linux/amd64 + arm64) built by GoReleaser `dockers_v2` from `build/docker/Dockerfile`, base pinned by digest
-- [x] Docker image built, signed (cosign) and attested by the release workflow (GHCR login, buildx + QEMU; not run yet)
+- [x] Docker image built, signed (cosign) and attested by the release workflow (GHCR login, buildx + QEMU; first pushed for v0.1.0, 2026-11-07)
 - [x] Community health files: CONTRIBUTING, CODE_OF_CONDUCT (Contributor Covenant 3.0), SUPPORT, CODEOWNERS, issue forms, pull request template filled by `ship`
 - [x] Contributor dev container (`.devcontainer/`, Codespaces)
 - [x] `SECURITY.md` and an SBOM per archive and per image

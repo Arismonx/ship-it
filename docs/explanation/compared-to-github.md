@@ -140,7 +140,7 @@ ship's MCP server delivers work; it does not browse issues or code like the GitH
 
 ship-it is the wrong choice if:
 
-- You need a mature tool: 0.1 is the first release, by a single maintainer. Try it on a side project first.
+- You need a mature tool: ship-it is at 0.1, with a single maintainer. Try it on a side project first.
 - Your code is not on GitHub. GitLab, Bitbucket and other forges are not supported. GitHub Enterprise Server is supported in the code but has not been tested against a real server yet. Without a GitHub remote, ship only commits locally.
 - You shape history by hand, with fine-grained `git rebase -i`, fixups, squashing or splitting commits by hunk: use git. ship never rewrites existing commits, and splitting work into atomic commits is *planned*.
 - You build stacks branch by branch, or reshape long-lived ones by hand. GitHub's `gh stack` extension does that better; `ship stack` starts from uncommitted work, and it is new ([how-to](../how-to/stack-pull-requests.md)).

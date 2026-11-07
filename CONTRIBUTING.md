@@ -67,6 +67,8 @@ The release configuration: `go run github.com/goreleaser/goreleaser/v2@v2.19.0 c
 - The [pull request template](.github/pull_request_template.md) asks how **you** tested the change: report what you did and saw, not CI output. `ship` fills the summary, the issue and the AI usage section; you answer the rest.
 - Say which AI tools you used, if any, in the "AI usage" section. You must be able to explain every line you submit.
 - CI must be green on Windows, macOS and Linux.
+- Every change to `main` goes through a pull request, squash-merged, the maintainer's own included: the branch rules allow no direct push and no bypass.
+- Labels sort the work: `kind/` (what it is), `area/` (the part of ship-it), `priority/`, `size/` (set by a workflow from the diff) and `triage/`. You do not need to set them; a maintainer does.
 - Review comments may use [Conventional Comments](https://conventionalcomments.org/) (`suggestion (non-blocking): …`), which `ship` will sort by whether they block.
 
 ## Propose an ADR
