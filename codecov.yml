@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Grégoire Favreau
+#
+# Codecov (docs/design/workflows.md §1). Coverage is shown, never a gate: its
+# statuses on pull requests are informational, so a drop in a percentage
+# never shows a red mark next to checks that passed. The coverage job in
+# ci.yml is not a required check either.
+coverage:
+  status:
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true
