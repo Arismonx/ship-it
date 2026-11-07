@@ -23,6 +23,9 @@ func TestFixAndUndo(t *testing.T) {
 	// Never touch the developer's own ~/.gitconfig.
 	globalConfig := filepath.Join(t.TempDir(), "gitconfig")
 	t.Setenv("GIT_CONFIG_GLOBAL", globalConfig)
+	// This test needs a repository without identity: drop the one TestMain
+	// gives through the environment.
+	t.Setenv("GIT_CONFIG_COUNT", "0")
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {

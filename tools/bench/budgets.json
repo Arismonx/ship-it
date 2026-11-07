@@ -6,11 +6,11 @@
     {"package": "./internal/core/plan", "name": "BenchmarkPropose", "max_ns": 10e6, "note": "2.0 ms"},
     {"package": "./internal/core/config", "name": "BenchmarkMergeFor", "max_ns": 3e5, "note": "62 µs"},
     {"package": "./internal/core/glob", "name": "BenchmarkAny", "max_ns": 250e6, "note": "59 ms"},
-    {"package": "./internal/adapters/checkpointstore", "name": "BenchmarkCreateWarm", "benchtime": "10x", "max_ns": 1.5e9, "max_git": 7, "note": "432 ms"},
+    {"package": "./internal/adapters/checkpointstore", "name": "BenchmarkCreateWarm", "benchtime": "10x", "max_ns": 1.5e9, "max_git": 8, "note": "432 ms; 7 git processes on Windows, 8 on Linux"},
     {"package": "./internal/adapters/checkpointstore", "name": "BenchmarkCreateCold", "benchtime": "2x", "max_ns": 3e9, "max_git": 9, "note": "760 ms: one git fast-import pack (was 5.9 s, one loose object per file)"},
     {"package": "./cmd/ship", "name": "BenchmarkStatusOffline", "benchtime": "10x", "max_ns": 600e6, "max_git": 5, "note": "129 ms"},
     {"package": "./cmd/ship", "name": "BenchmarkPlan", "benchtime": "10x", "max_ns": 1e9, "max_git": 7, "note": "259 ms"},
-    {"package": "./cmd/ship", "name": "BenchmarkShipLocal", "benchtime": "10x", "max_ns": 4e9, "max_git": 23, "note": "1.0 s"},
+    {"package": "./cmd/ship", "name": "BenchmarkShipLocal", "benchtime": "10x", "max_ns": 4e9, "max_git": 25, "note": "1.0 s; 23 git processes on Windows, 25 on Linux"},
     {"package": "./cmd/ship", "name": "BenchmarkBinaryStatusOffline", "benchtime": "10x", "max_ns": 800e6, "max_git": 5, "note": "185 ms, process start included"}
   ]
 }

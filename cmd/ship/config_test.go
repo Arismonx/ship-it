@@ -23,7 +23,7 @@ func TestConfigSetUnsetThenUndo(t *testing.T) {
 	t.Setenv("GIT_CONFIG_GLOBAL", filepath.Join(home, "gitconfig"))
 	s := newScenario(t, nil)
 	configHome := filepath.Join(home, "config")
-	s.deps.Config = &fsconfig.Files{Git: s.git, Env: platform.Environment{
+	env := platform.Environment{
 		GOOS: runtime.GOOS, Home: home, PolicyPath: filepath.Join(home, "no-policy.json"),
 		Getenv: func(name string) string {
 			if name == "AppData" || name == "XDG_CONFIG_HOME" {
@@ -31,7 +31,8 @@ func TestConfigSetUnsetThenUndo(t *testing.T) {
 			}
 			return ""
 		},
-	}}
+	}
+	s.deps.Config = &fsconfig.Files{Git: s.git, Env: env}
 	s.write("README.md", "# test\n")
 	s.sh("add", "--all")
 	s.sh("commit", "--quiet", "-m", "🎉 chore: init")
@@ -60,7 +61,7 @@ func TestConfigSetUnsetThenUndo(t *testing.T) {
 	if got := read(repoFile); got != want {
 		t.Fatalf("repository file =\n%q\nwant\n%q", got, want)
 	}
-	if code, stdout, stderr := s.ship("config", "get", "ship.pullRequest.maxLines"); code != cli.ExitOK || stdout != "600\n" || !strings.Contains(stderr, repoFile) {
+	if code, stdout, stderr := s.ship("config", "get", "ship.pullRequest.maxLines"); code != cli.ExitOK || stdout != "600\n" || !strings.Contains(stderr, filepath.Join(".github", "ship.json")) {
 		t.Fatalf("config get: exit %d\n%s%s", code, stdout, stderr)
 	}
 	if code, _, stderr := s.ship("config", "unset", "ship.publish.mode"); code != cli.ExitOK {
@@ -69,7 +70,13 @@ func TestConfigSetUnsetThenUndo(t *testing.T) {
 	if got := read(repoFile); strings.Contains(got, "publish") || !strings.Contains(got, "// Reviewed by the team.") {
 		t.Fatalf("after unset:\n%s", got)
 	}
-	userFile := filepath.Join(configHome, platform.AppName, "config.json")
+	// Where the user file lives depends on the OS (Library/Application Support
+	// on macOS): ask the platform package, as ship does.
+	userDir, err := env.ConfigDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	userFile := filepath.Join(userDir, "config.json")
 	if code, _, stderr := s.ship("config", "set", "ship.issues.keyword", "Refs", "--user"); code != cli.ExitOK {
 		t.Fatalf("config set --user: exit %d\n%s", code, stderr)
 	}
@@ -77,7 +84,7 @@ func TestConfigSetUnsetThenUndo(t *testing.T) {
 		t.Fatalf("user file:\n%s", got)
 	}
 	code, stdout, _ := s.ship("config", "explain", "ship.issues.keyword")
-	if code != cli.ExitOK || !strings.Contains(stdout, "SHIP_ISSUES_KEYWORD") || !strings.Contains(stdout, userFile) || !strings.Contains(stdout, "Closes, Fixes, Resolves, Refs") {
+	if code != cli.ExitOK || !strings.Contains(stdout, "SHIP_ISSUES_KEYWORD") || !strings.Contains(stdout, "config.json") || !strings.Contains(stdout, "Closes, Fixes, Resolves, Refs") {
 		t.Fatalf("config explain: exit %d\n%s", code, stdout)
 	}
 	// The ids of the built-in secret rules, for ship.secrets.disabledRules.
