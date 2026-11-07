@@ -82,7 +82,7 @@ func TestHintsNeverHideAMatch(t *testing.T) {
 	}
 	// A Kelvin sign folds to "k" in the pattern, not in ASCII lowering: the
 	// line is still matched against the pattern.
-	if _, ok := scanLine(builtinCandidates(), "api_Key="+fake("Zk8q", "Lw2vN9xT4pR7mY3s"), noneAllowed); !ok {
+	if _, ok := scanLine(builtinCandidates(), "api_Key="+fake("Zk8q", "Lw2vN9xT4pR7mY3s"), noneAllowed, noFingerprint); !ok {
 		t.Error("a Kelvin sign must not hide a secret")
 	}
 }
@@ -103,3 +103,6 @@ func builtinCandidates() []candidate {
 }
 
 func noneAllowed(RuleID, string) bool { return false }
+
+// noFingerprint skips the slow fingerprint where a test only looks for a match.
+func noFingerprint(RuleID, string) string { return "" }

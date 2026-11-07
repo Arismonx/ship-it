@@ -58,7 +58,7 @@ Branch prefixes per type come from `ship.commits.types.<type>.branchPrefix`.
 |---|---|---|---|
 | `ship.secrets.rules` | list of `{id, pattern, keywords}` | `[]` | Extra rules: a Go regular expression, and literal keywords a line must contain for the pattern to run (as the built-in rules do). |
 | `ship.secrets.disabledRules` | list of rule ids | `[]` | Built-in rules to turn off; `ship config explain` lists the ids. |
-| `ship.secrets.allow` | list of SHA-256 fingerprints | `[]` | Findings to accept, by the fingerprint ship prints, never by value (a value in a config file would leak it). |
+| `ship.secrets.allow` | list of fingerprints | `[]` | Findings to accept, by the fingerprint ship prints, never by value (a value in a config file would leak it). |
 
 ## Interface
 

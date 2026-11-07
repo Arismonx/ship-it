@@ -203,7 +203,7 @@ type SecretsSettings struct {
 	Rules []SecretRule `json:"rules" uniqueBy:"id" doc:"Extra rules: an id, a Go regular expression (RE2) and the literal keywords a line must contain for the pattern to run (compared without case when the pattern has (?i)). The value reported is the first capture group, else the whole match."`
 	// DisabledRules: the ids are checked against secrets.BuiltinRules (config_test.go).
 	DisabledRules []string `json:"disabledRules" itemEnum:"private_key,github_token,aws_key,anthropic_key,openai_key,groq_key,google_key,stripe_key,slack_token,npm_token,url_with_password,secret_assignment,sensitive_file" doc:"Built-in rules turned off, by id."`
-	Allow         []string `json:"allow" itemPattern:"^[0-9a-f]{64}$" patternHint:"SHA-256 fingerprints as ship prints them (64 lower-case hexadecimal characters)" doc:"Findings accepted, by the fingerprint ship prints with each one (SHA-256 of the rule id, a NUL byte and the value), never by value: a value in a file would leak it."`
+	Allow         []string `json:"allow" itemPattern:"^[0-9a-f]{64}$" patternHint:"fingerprints as ship prints them (64 lower-case hexadecimal characters)" doc:"Findings accepted, by the fingerprint ship prints with each one (PBKDF2-HMAC-SHA256 of the value, salted with the rule id), never by value: a value in a file would leak it."`
 }
 
 // SecretRule is an extra rule of the secret scan (ship.secrets.rules).

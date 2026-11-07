@@ -61,7 +61,7 @@ func TestSecretsSettingsErrors(t *testing.T) {
 	}{
 		{"unknown rule id", `{"ship": {"secrets": {"disabledRules": ["aws"]}}}`, fault.ConfigInvalidValue,
 			"ship.secrets.disabledRules", strings.ReplaceAll(builtinSecretRules, ",", ", ")},
-		{"fingerprint", `{"ship": {"secrets": {"allow": ["AKIA1234"]}}}`, fault.ConfigInvalidValue, "ship.secrets.allow", "SHA-256 fingerprints"},
+		{"fingerprint", `{"ship": {"secrets": {"allow": ["AKIA1234"]}}}`, fault.ConfigInvalidValue, "ship.secrets.allow", "fingerprints as ship prints them"},
 		{"rules not an array", `{"ship": {"secrets": {"rules": {}}}}`, fault.ConfigWrongType, "ship.secrets.rules", ""},
 		{"rule not an object", rule(`"x"`), fault.ConfigWrongType, "ship.secrets.rules[0]", ""},
 		{"unknown rule key", rule(`{"id": "a", "regex": "x"}`), fault.ConfigUnknownKey, "ship.secrets.rules[0].regex", ""},

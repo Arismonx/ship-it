@@ -23,8 +23,8 @@ type SecretView struct {
 	Rule    string `json:"rule"`
 	Preview string `json:"preview,omitempty"`
 	Length  int    `json:"length,omitempty"`
-	// Fingerprint accepts the finding in ship.secrets.allow: the SHA-256 of
-	// the rule id, a NUL byte and the value (the path for a whole file).
+	// Fingerprint accepts the finding in ship.secrets.allow: the PBKDF2-HMAC-SHA256
+	// of the value (the path for a whole file), salted with the rule id.
 	Fingerprint string `json:"fingerprint"`
 }
 

@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Security
+
+- The fingerprint of a secret finding, which `ship.secrets.allow` lists, is now a PBKDF2-HMAC-SHA256 of the value (600 000 iterations, salted with the rule id) instead of a plain SHA-256: a fingerprint committed in `.github/ship.json` no longer lets anyone find a weak secret back by brute force. The fingerprints of 0.1 are still accepted during 0.x; ship prints the new one to replace them.
+
 ## [0.1.0] - 2026-11-07
 
 First release.

@@ -4,6 +4,7 @@
 package secrets
 
 import (
+	"crypto/pbkdf2"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -110,10 +111,36 @@ func Builtin(id RuleID) bool { return slices.Contains(BuiltinRules(), id) }
 func foldsCase(pattern string) bool { return strings.Contains(pattern, "(?i") }
 
 // Fingerprint identifies a finding without its value, for ship.secrets.allow:
-// the lower-case hexadecimal SHA-256 of the rule id, a NUL byte and the
-// matched value (the path, for a whole sensitive file). The same value found
-// by the same rule has the same fingerprint wherever it is.
+// the lower-case hexadecimal PBKDF2-HMAC-SHA256 of the matched value (the
+// path, for a whole sensitive file), salted with the rule id. The same value
+// found by the same rule has the same fingerprint wherever it is, so the
+// fingerprint can be committed in .github/ship.json; the cost of the key
+// derivation keeps a weak secret from being found back from it by brute
+// force, which a plain hash would allow.
 func Fingerprint(id RuleID, value string) string {
+	key, err := pbkdf2.Key(sha256.New, value, []byte(fingerprintSalt+string(id)), fingerprintIterations, sha256.Size)
+	if err != nil {
+		// pbkdf2.Key fails only on parameters these constants never give.
+		panic("secrets: fingerprint: " + err.Error())
+	}
+	return hex.EncodeToString(key)
+}
+
+// fingerprintIterations follows OWASP's Password Storage Cheat Sheet for
+// PBKDF2-HMAC-SHA256 (600 000). A fingerprint is computed only for a finding,
+// once, so the cost stays out of a clean scan.
+const fingerprintIterations = 600_000
+
+// fingerprintSalt is the fixed part of the salt: a fingerprint must not
+// depend on the machine, or a team could not share it.
+const fingerprintSalt = "ship-it/secrets/fingerprint\x00"
+
+// legacyFingerprint is the fingerprint of ship-it 0.1, a plain SHA-256 of the
+// rule id, a NUL byte and the value. ship.secrets.allow still accepts it during
+// 0.x, so that existing allow lists keep working; it is never printed.
+//
+// Deprecated: removed in 1.0. ship prints the new fingerprint to replace it.
+func legacyFingerprint(id RuleID, value string) string {
 	sum := sha256.Sum256([]byte(string(id) + "\x00" + value))
 	return hex.EncodeToString(sum[:])
 }
@@ -214,8 +241,20 @@ func Scan(files []snapshot.FileDiff, opts Options) []Finding {
 	for _, r := range opts.Rules {
 		active = append(active, candidate{rule: r.r, custom: true})
 	}
+	// A fingerprint is slow on purpose: each one is computed once per scan.
+	fingerprints := map[string]string{}
+	fingerprint := func(id RuleID, value string) string {
+		key := string(id) + "\x00" + value
+		if fp, ok := fingerprints[key]; ok {
+			return fp
+		}
+		fp := Fingerprint(id, value)
+		fingerprints[key] = fp
+		return fp
+	}
 	allowed := func(id RuleID, value string) bool {
-		return len(opts.Allow) > 0 && slices.Contains(opts.Allow, Fingerprint(id, value))
+		return len(opts.Allow) > 0 && (slices.Contains(opts.Allow, fingerprint(id, value)) ||
+			slices.Contains(opts.Allow, legacyFingerprint(id, value)))
 	}
 	var findings []Finding
 	for _, f := range files {
@@ -223,10 +262,10 @@ func Scan(files []snapshot.FileDiff, opts Options) []Finding {
 			continue
 		}
 		if sensitiveFile.MatchString(f.Path) && !slices.Contains(opts.Disabled, SensitiveFile) && !allowed(SensitiveFile, f.Path) {
-			findings = append(findings, Finding{Path: f.Path, Rule: SensitiveFile, Fingerprint: Fingerprint(SensitiveFile, f.Path)})
+			findings = append(findings, Finding{Path: f.Path, Rule: SensitiveFile, Fingerprint: fingerprint(SensitiveFile, f.Path)})
 		}
 		for _, line := range f.Added {
-			if finding, ok := scanLine(active, line.Text, allowed); ok {
+			if finding, ok := scanLine(active, line.Text, allowed, fingerprint); ok {
 				finding.Path, finding.Line = f.Path, line.Number
 				findings = append(findings, finding)
 			}
@@ -235,7 +274,7 @@ func Scan(files []snapshot.FileDiff, opts Options) []Finding {
 	return findings
 }
 
-func scanLine(active []candidate, text string, allowed func(RuleID, string) bool) (Finding, bool) {
+func scanLine(active []candidate, text string, allowed func(RuleID, string) bool, fingerprint func(RuleID, string) string) (Finding, bool) {
 	ascii := isASCII(text)
 	lower := ""
 	if ascii {
@@ -262,7 +301,7 @@ func scanLine(active []candidate, text string, allowed func(RuleID, string) bool
 		if allowed(r.id, value) {
 			continue
 		}
-		return Finding{Rule: r.id, Preview: mask(value), Length: len([]rune(value)), Fingerprint: Fingerprint(r.id, value)}, true
+		return Finding{Rule: r.id, Preview: mask(value), Length: len([]rune(value)), Fingerprint: fingerprint(r.id, value)}, true
 	}
 	return Finding{}, false
 }

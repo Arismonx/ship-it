@@ -109,7 +109,7 @@ func FuzzScan(f *testing.F) {
 }
 
 func TestFingerprint(t *testing.T) {
-	// SHA-256 of "aws_key\x00" + the key, in lower-case hexadecimal.
+	// PBKDF2-HMAC-SHA256 of the key, salted with the rule id, in lower-case hexadecimal.
 	got := Scan([]snapshot.FileDiff{diff("a.go", "k = "+awsKey)}, Options{})
 	if len(got) != 1 || got[0].Fingerprint != Fingerprint(AWSKey, awsKey) || len(got[0].Fingerprint) != 64 ||
 		got[0].Fingerprint != strings.ToLower(got[0].Fingerprint) || strings.Contains(got[0].Fingerprint, awsKey) {
@@ -118,8 +118,10 @@ func TestFingerprint(t *testing.T) {
 	if Fingerprint(AWSKey, "x") == Fingerprint(GitHubToken, "x") {
 		t.Fatal("the fingerprint must depend on the rule and the value")
 	}
-	// Pinned: the documented definition (docs/reference/configuration.md).
-	if got := Fingerprint("acme_token", "abc"); got != "9ec91464ecaab15247b9c24c0f8aca2198d6f94f1680b8ae0042e9617bbddeb1" {
+	// Pinned: the documented definition (docs/reference/configuration.md),
+	// checked with Python: hashlib.pbkdf2_hmac("sha256", b"abc",
+	// b"ship-it/secrets/fingerprint\x00acme_token", 600000).hex().
+	if got := Fingerprint("acme_token", "abc"); got != "c3e81dc0b606a475880ae057ca60e0c25bbd9c65fa06aa7f8a05ac98bdb7f593" {
 		t.Fatalf("Fingerprint = %s", got)
 	}
 	file := Scan([]snapshot.FileDiff{diff(".env")}, Options{})
@@ -139,6 +141,18 @@ func TestAllowAcceptsAFindingByFingerprint(t *testing.T) {
 	got = Scan([]snapshot.FileDiff{diff("a.go", line)}, Options{Allow: []string{Fingerprint(AWSKey, awsKey)}})
 	if len(got) != 1 || got[0].Rule != GitHubToken {
 		t.Fatalf("findings = %+v", got)
+	}
+}
+
+// TestAllowStillAcceptsTheFingerprintsOf01: ship-it 0.1 printed a plain
+// SHA-256; an allow list written then keeps working during 0.x.
+func TestAllowStillAcceptsTheFingerprintsOf01(t *testing.T) {
+	if got := legacyFingerprint("acme_token", "abc"); got != "9ec91464ecaab15247b9c24c0f8aca2198d6f94f1680b8ae0042e9617bbddeb1" {
+		t.Fatalf("legacyFingerprint = %s, the value 0.1 printed", got)
+	}
+	got := Scan([]snapshot.FileDiff{diff("a.go", "k = "+awsKey)}, Options{Allow: []string{legacyFingerprint(AWSKey, awsKey)}})
+	if len(got) != 0 {
+		t.Fatalf("findings = %+v, want none: a 0.1 fingerprint is still accepted", got)
 	}
 }
 
