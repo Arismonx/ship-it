@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/GregoireF/ship-it/internal/core/forge"
 	"github.com/GregoireF/ship-it/internal/core/roadmap"
@@ -106,6 +107,7 @@ type projectItemJSON struct {
 	ID          int64  `json:"id"`
 	ContentType string `json:"content_type"`
 	Content     *struct {
+		ID            int64  `json:"id"`
 		Number        int    `json:"number"`
 		RepositoryURL string `json:"repository_url"`
 	} `json:"content"`
@@ -175,12 +177,64 @@ func (c *Client) ProjectItems(ctx context.Context, repo forge.Repository, projec
 }
 
 // AddProjectItem implements ports.Projects (POST …/items with the issue's id).
+// An issue already in the project is not an error: GitHub's built-in
+// workflow "Auto-add sub-issues to project", on by default, adds a sub-issue
+// as soon as its parent is there, and then answers 422 "Content already
+// exists in this project". The item it added is the one returned. The
+// workflow runs in the background: the item can be missing from the listing
+// for a moment after the 422, so the lookup is tried a few times.
 func (c *Client) AddProjectItem(ctx context.Context, repo forge.Repository, project forge.Project, issueID int64) (int64, error) {
 	var out struct {
 		ID int64 `json:"id"`
 	}
 	_, err := c.projectCall(ctx, repo, http.MethodPost, projectPath(project)+"/items", map[string]any{"type": "Issue", "id": issueID}, &out)
-	return out.ID, err
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) || apiErr.Status != http.StatusUnprocessableEntity || !strings.Contains(strings.ToLower(apiErr.Error()), "already exists") {
+		return out.ID, err
+	}
+	for attempt := 1; attempt <= projectItemLookups; attempt++ {
+		id, found, ferr := c.projectItemOf(ctx, repo, project, issueID)
+		if ferr != nil {
+			return 0, errors.Join(err, ferr)
+		}
+		if found {
+			return id, nil
+		}
+		if attempt < projectItemLookups {
+			select {
+			case <-ctx.Done():
+				return 0, errors.Join(err, ctx.Err())
+			case <-time.After(time.Duration(attempt) * projectItemLookupDelay):
+			}
+		}
+	}
+	return 0, err
+}
+
+// projectItemLookups and projectItemLookupDelay bound the search for an item
+// GitHub added itself: 1 s, then 2 s, 3 s and 4 s between the tries.
+var (
+	projectItemLookups     = 5
+	projectItemLookupDelay = time.Second
+)
+
+// projectItemOf finds the item of an issue in a project.
+func (c *Client) projectItemOf(ctx context.Context, repo forge.Repository, project forge.Project, issueID int64) (int64, bool, error) {
+	next := projectPath(project) + "/items?per_page=100"
+	for page := 0; next != "" && page < maxProjectPages; page++ {
+		var out []projectItemJSON
+		header, err := c.projectCall(ctx, repo, http.MethodGet, next, nil, &out)
+		if err != nil {
+			return 0, false, err
+		}
+		for _, it := range out {
+			if it.Content != nil && it.Content.ID == issueID {
+				return it.ID, true, nil
+			}
+		}
+		next = nextPage(header.Get("Link"), c.baseURL(repo))
+	}
+	return 0, false, nil
 }
 
 // SetProjectField implements ports.Projects (PATCH …/items/{id} with
