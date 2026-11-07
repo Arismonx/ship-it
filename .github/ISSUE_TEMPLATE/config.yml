@@ -11,5 +11,8 @@ contact_links:
     url: https://github.com/GregoireF/ship-it/security/advisories/new
     about: Privately, through GitHub's private vulnerability reporting. Never in a public issue (SECURITY.md).
   - name: Ask a question
-    url: https://github.com/GregoireF/ship-it/discussions
-    about: How do I…? Is this expected? Ideas that are not a concrete request yet.
+    url: https://github.com/GregoireF/ship-it/discussions/categories/q-a
+    about: How do I…? Is this expected?
+  - name: Propose an idea
+    url: https://github.com/GregoireF/ship-it/discussions/categories/ideas
+    about: An idea that is not a concrete request yet. Talk it through here; a planned one becomes an issue on the roadmap.

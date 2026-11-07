@@ -4,6 +4,14 @@ Thanks for your interest! ship-it is young: open an issue before a large change,
 
 Everyone taking part follows the [code of conduct](CODE_OF_CONDUCT.md). Questions go to [Discussions](https://github.com/GregoireF/ship-it/discussions) (see [SUPPORT.md](SUPPORT.md)); vulnerabilities never go in a public issue (see [SECURITY.md](SECURITY.md)).
 
+## Where to start
+The [roadmap board](https://github.com/users/GregoireF/projects/1) shows every planned issue by version, kept in line with [ROADMAP.md](ROADMAP.md) by `ship roadmap sync`.
+
+- [Good first issues](https://github.com/GregoireF/ship-it/issues?q=is%3Aopen+label%3A%22good+first+issue%22) are small and self-contained: each names the files to change and how to test it.
+- [Help wanted](https://github.com/GregoireF/ship-it/issues?q=is%3Aopen+label%3A%22help+wanted%22) are larger pieces where a hand is welcome.
+- Say in the issue that you are taking it, so that two people do not do the same work. Ask there if anything is unclear.
+- An idea that is not on the board yet goes to [Discussions › Ideas](https://github.com/GregoireF/ship-it/discussions/categories/ideas) first.
+
 ## Before you start
 - Read [ARCHITECTURE.md](ARCHITECTURE.md) (layers and import rules, enforced by `internal/archtest`) and the ADRs in [docs/adr/](docs/adr/) that touch your change.
 - [ROADMAP.md](ROADMAP.md) lists what is planned; open an issue to discuss what is not decided yet.

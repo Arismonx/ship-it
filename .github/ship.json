@@ -1,0 +1,11 @@
+{
+  "$schema": "https://raw.githubusercontent.com/GregoireF/ship-it/main/schemas/ship.schema.json",
+  // ship-it's own settings. The roadmap board is a public GitHub Project that
+  // `ship roadmap sync` keeps in line with ROADMAP.md.
+  "github": {
+    "project": {
+      "url": "https://github.com/users/GregoireF/projects/1",
+      "phaseField": "Phase"
+    }
+  }
+}
