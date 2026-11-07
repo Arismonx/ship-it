@@ -608,6 +608,9 @@ func (r runner) statusCommand(args []string) int {
 		line("pull_request", t("cli.status.pull_request", map[string]string{"number": n(view.PullRequest.Number), "url": view.PullRequest.URL}))
 	case view.GitHubProblem != nil:
 		line("pull_request", view.GitHubProblem.Code+"  "+t(view.GitHubProblem.Key, view.GitHubProblem.Params))
+	case view.Base != "" && view.Branch == view.Base:
+		// The default branch has no pull request of its own, and status does
+		// not ask GitHub for one: "unknown (offline)" would be wrong.
 	case view.GitHub == "known":
 		line("pull_request", t("cli.status.no_pull_request", nil))
 	case view.GitHub == "unknown":

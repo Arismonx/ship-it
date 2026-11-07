@@ -5,8 +5,30 @@ package main
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 )
+
+// TestStatusOnTheDefaultBranch: the default branch has no pull request of its
+// own and status does not ask GitHub for one, so it says nothing about it
+// rather than "unknown (offline)".
+func TestStatusOnTheDefaultBranch(t *testing.T) {
+	s := newScenario(t, nil)
+	s.write("main.go", "package main\n")
+	s.sh("add", "--all")
+	s.sh("commit", "--quiet", "-m", "🎉 chore: init")
+	s.sh("remote", "add", "origin", "https://github.com/acme/shop.git")
+	s.sh("update-ref", "refs/remotes/origin/main", "HEAD")
+	s.sh("symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main")
+
+	code, stdout, stderr := s.ship("status")
+	if code != 0 {
+		t.Fatalf("exit %d: %s", code, stderr)
+	}
+	if strings.Contains(stdout, "Pull request") || strings.Contains(stdout, "offline") {
+		t.Errorf("status on main talks about a pull request:\n%s", stdout)
+	}
+}
 
 // TestStatusWithABaseNeverFetched: origin/HEAD names a branch that was never
 // fetched, so status cannot compare with it and says no base rather than
