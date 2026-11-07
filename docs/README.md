@@ -13,6 +13,7 @@ For your first steps; no experience with git needed.
 
 For a task you already know you need.
 
+- [Install, update and remove ship-it](how-to/install.md)
 - [Deliver only part of your work](how-to/deliver-part-of-your-work.md)
 - [Ship your work as a stack of pull requests](how-to/stack-pull-requests.md)
 - [Configure ship-it for your team](how-to/configure-your-team.md)
