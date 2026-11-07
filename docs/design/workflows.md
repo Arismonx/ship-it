@@ -36,11 +36,11 @@ Written, **never run on GitHub** (the repository is not there yet): to watch on 
    - **Docker**: Alpine + git image (non-root 65532, `build/docker/Dockerfile`), published by GoReleaser on `ghcr.io/gregoiref/ship` (linux/amd64 and linux/arm64), signed (cosign) and attested (§5).
 3. Windows signing through SignPath as soon as the project is eligible (public and already published).
 
-## 3. Nightly (`nightly.yml`, scheduled)
-- **Real E2E** against the sandbox repository (stacks, rulesets, issue types on a personal repository (V9), draft PRs, compensating actions).
-- **Mutation testing** (Gremlins or go-mutesting), score tracked.
-- **Drift detection**: schemas of the stacks API and of the MCP spec, state of `githubstatus.com`.
-- Long fuzzing.
+## 3. Nightly (scheduled)
+- **Real E2E** against the sandbox repository: `nightly-real.yml` (§11) runs a delivery, an undo, a stack and its merge every night. Still to add: rulesets, issue types on a personal repository (V9).
+- **Mutation testing** (Gremlins or go-mutesting), score tracked: not done yet.
+- **Drift detection**: schemas of the stacks API and of the MCP spec, state of `githubstatus.com`: not done yet.
+- Long fuzzing: `fuzz.yml` (§8), weekly.
 
 ## 4. Hygiene and dogfooding
 - **PR title** validated by ship-it's own parser (we eat our own format).
@@ -79,6 +79,7 @@ Written in English. Follows [zizmor](https://docs.zizmor.sh)'s audits. Nothing h
 | `outdated.yml` | weekly, manual | `check`: `contents: read`. `issue`: `issues: write` only | `go run ./tools/outdated` compares the pinned tools (below) with their latest releases; when one is behind (and out of its 7-day cooldown), one issue titled "Pinned tools are behind their latest release" is opened or updated, and closed once all are up to date. The repository code runs in the read-only job; the job that writes issues runs no repository code. |
 | `dco.yml` | `pull_request` | `contents: read` | `ship check signoff` (built from the pull request, read-only token) on `base.sha..head.sha`, full history fetched (§7). |
 | `fuzz.yml` | weekly, manual | `targets`, `fuzz`: `contents: read`. `issues`: `issues: write` only | Long fuzzing of every target, one job each (§8). |
+| `nightly-real.yml` | daily 03:17 UTC, manual | `contents: read`, `issues: write`; environment `sandbox` | Real end-to-end run on the sandbox repository (§11). |
 | `triage.yml` | `pull_request`, `issues` (opened), hourly, manual | `label`: `contents: read`, `pull-requests: write`, `issues: write`. `welcome`: `issues: write`, `pull-requests: write` | `ship label` and the first-time contributor welcome, without `pull_request_target` (§9). |
 | `stale.yml` | daily, manual | `issues: write`, `pull-requests: write` | `actions/stale` and `dessant/lock-threads`, conservative (§9). |
 | `labels.yml` | push to `main` changing `.github/ship.json` or the workflow, manual | `contents: read`, `issues: write` | `ship sync --yes`: GitHub labels as code (§9). |
@@ -197,3 +198,11 @@ A dependency bump changes `THIRD_PARTY_NOTICES.txt` (and possibly other outputs 
 - **Two jobs.** `generate` (`contents: read`) checks out the branch's own commit and runs `go run ./tools/gen`: that compiles the bumped dependencies, so it never holds a write token; it hands over the files it changed, with their list (`changed.txt`), as an artifact (1 day). `commit` (`contents: write`) never checks out the pull request (CodeQL `actions/untrusted-checkout`) and runs no repository code: it checks that the branch has not moved, refuses any path outside the `ALLOWED` list (every output of `tools/gen`; `TestDependabotWorkflowAllowsEveryOutput` keeps it in step) and any file that is not a regular file, then makes the commit through GitHub's Git Data API: one blob per file, a tree on the head commit's tree, a commit whose parent is the head commit, and a fast-forward of the branch (`force: false`, so it fails if the branch moved). The commit has the title `📦️ build(deps): regenerate the generated files` (it passes `ship check title`) and a sign-off by its author, the App's bot user (or `github-actions[bot]`); the DCO check exempts bot authors anyway. A commit made through the API with the App's token is signed by GitHub.
 - **`[dependabot skip]` in the commit message**: by default Dependabot stops rebasing a pull request once others push to it; this marker lets it keep force-pushing (the workflow then regenerates).
 - **The push token.** "Events triggered by the `GITHUB_TOKEN` will not create a new workflow run", so a commit made with the job token would be left without checks. The `commit` job therefore mints an installation token of a dedicated GitHub App with `actions/create-github-app-token` v3.3.0 (`client-id` and `private-key` from the Dependabot secrets `APP_CLIENT_ID` and `APP_PRIVATE_KEY`; without `owner` it is scoped to this repository; `permission-contents: write` and nothing else; revoked at the end of the job by the action). Its commit starts the checks. Setting it up: checklist item 10 (done for ship-it on 2026-11-07). Without the secrets, it falls back to the job token (`contents: write`) and prints a notice: close and reopen the pull request before merging (`@dependabot rebase` would not help: it replaces the commit and the workflow pushes a new one). zizmor's auditor-only `secrets-outside-env` is ignored inline on these lines: a Dependabot-triggered run cannot read environment secrets.
+
+## 11. Real end-to-end run (`nightly-real.yml`)
+The tests in `cmd/ship` run real git against a fake GitHub. The first run by hand on the sandbox repository found five bugs they could not see (missing messages, a stack layer that did not build, two roadmap sync failures), so a real run happens every night (#60).
+
+- **What it does**, at 03:17 UTC and on demand: builds ship from `main`, clones `GregoireF/ship-it-sandbox`, and runs a delivery (`ship --yes`, a draft pull request), `ship status`, `ship undo` of the publication then of the commit, `ship stack` (one pull request per layer), `ship stack merge` (GitHub's asynchronous merge API), `ship stack sync`. Each result is checked on GitHub with `gh` (pull request open, draft, closed, merged; branch gone), not with ship's own output.
+- **Clean-up**, even after a failure: open pull requests closed with their branches, the run's files removed from the sandbox's `main`.
+- **A failure** opens the issue "Nightly real run failed" in this repository, or comments on it if it is open, with the step that failed and the link to the run (job token, `issues: write`).
+- **Access**: an installation token of the GitHub App `ship-it-sandbox-runner`, installed on the sandbox only, with Contents, Pull requests and Issues in write; created on 2026-11-07. Its client id and private key are the secrets `SANDBOX_APP_CLIENT_ID` and `SANDBOX_APP_PRIVATE_KEY` of the `sandbox` environment, which only `main` can use. The token reaches git through `GIT_CONFIG_*` variables, never `.git/config`.

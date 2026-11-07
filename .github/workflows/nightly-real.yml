@@ -1,0 +1,171 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Grégoire Favreau
+#
+# Real end-to-end run, every night (docs/design/workflows.md §11, #60): ship,
+# built from main, works on the public GregoireF/ship-it-sandbox repository
+# against the real GitHub. The tests in cmd/ship use a fake GitHub; the first
+# run by hand on the sandbox found five bugs they could not see.
+#
+# The run: a delivery and its draft pull request, ship status, ship undo of the
+# publication then of the commit, a stack of pull requests, its merge through
+# GitHub's asynchronous merge API, ship stack sync. Every result is checked on
+# GitHub with gh, not with ship's own output. The sandbox is cleaned at the
+# end, even after a failure. A failure opens an issue here (or comments on the
+# one already open).
+#
+# Access: an installation token of the GitHub App ship-it-sandbox-runner,
+# installed on the sandbox only (Contents, Pull requests, Issues), from the
+# secrets of the `sandbox` environment, usable from main only.
+name: nightly-real
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+# Nothing by default; the job asks for what it needs.
+permissions: {}
+
+concurrency:
+  group: nightly-real
+  cancel-in-progress: false
+
+jobs:
+  run:
+    name: real run on the sandbox
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: sandbox
+    permissions:
+      contents: read
+      issues: write # open or comment the issue of a failed run, in this repository
+    env:
+      SANDBOX: GregoireF/ship-it-sandbox
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: build ship
+        run: go build -o "$RUNNER_TEMP/bin/ship" ./cmd/ship && echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - name: sandbox token
+        id: app
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ secrets.SANDBOX_APP_CLIENT_ID }}
+          private-key: ${{ secrets.SANDBOX_APP_PRIVATE_KEY }}
+          owner: GregoireF
+          repositories: ship-it-sandbox
+          # No more than the run needs, even if the App gets more one day.
+          permission-contents: write
+          permission-pull-requests: write
+          permission-issues: write
+      - name: clone the sandbox
+        env:
+          TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          set -euo pipefail
+          # The token reaches git through the environment only, never .git/config.
+          basic="$(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)"
+          echo "::add-mask::$basic"
+          {
+            echo "GIT_CONFIG_COUNT=3"
+            echo "GIT_CONFIG_KEY_0=http.https://github.com/.extraheader"
+            echo "GIT_CONFIG_VALUE_0=AUTHORIZATION: basic $basic"
+            echo "GIT_CONFIG_KEY_1=user.name"
+            echo "GIT_CONFIG_VALUE_1=ship-it-sandbox-runner[bot]"
+            echo "GIT_CONFIG_KEY_2=user.email"
+            echo "GIT_CONFIG_VALUE_2=ship-it-sandbox-runner[bot]@users.noreply.github.com"
+          } >> "$GITHUB_ENV"
+      - name: run
+        id: run
+        working-directory: ${{ runner.temp }}
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          RUN: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          git clone --quiet "https://github.com/$SANDBOX.git" sandbox
+          cd sandbox
+          step() { echo "::group::$1"; echo "$1" > "$RUNNER_TEMP/step"; }
+          open_prs() { gh pr list -R "$SANDBOX" --state open --json number --jq length; }
+
+          step "a delivery opens a draft pull request"
+          mkdir -p nightly
+          printf 'package nightly\n\n// Run%s is tonight'"'"'s change.\nfunc Run%s() int { return %s }\n' "$RUN" "$RUN" "$RUN" > "nightly/run.go"
+          ship --yes --why "Nightly real run $RUN."
+          branch="$(git branch --show-current)"
+          pr="$(gh pr list -R "$SANDBOX" --head "$branch" --state open --json number,isDraft --jq '.[0]')"
+          [ "$(jq -r .isDraft <<<"$pr")" = true ] || { echo "::error::no draft pull request for $branch"; exit 1; }
+          number="$(jq -r .number <<<"$pr")"
+          ship status
+          echo "::endgroup::"
+
+          step "ship undo closes the pull request, then takes the commit back"
+          ship undo --yes
+          [ "$(gh pr view "$number" -R "$SANDBOX" --json state --jq .state)" = CLOSED ] || { echo "::error::#$number still open"; exit 1; }
+          git ls-remote --exit-code origin "refs/heads/$branch" >/dev/null && { echo "::error::$branch still on GitHub"; exit 1; }
+          ship undo --yes
+          [ "$(git branch --show-current)" = main ] || { echo "::error::not back on main"; exit 1; }
+          echo "::endgroup::"
+
+          step "ship stack opens one pull request per layer"
+          mkdir -p docs
+          printf '# Nightly\n\nRun %s adds Run%s.\n' "$RUN" "$RUN" > docs/nightly.md
+          printf 'package nightly\n\nimport "testing"\n\nfunc TestRun(t *testing.T) {\n\tif Run%s() != %s {\n\t\tt.Fatal("wrong run")\n\t}\n}\n' "$RUN" "$RUN" > nightly/run_test.go
+          ship stack --yes
+          layers="$(open_prs)"
+          [ "$layers" -ge 2 ] || { echo "::error::$layers pull request(s), want a stack"; exit 1; }
+          ship stack status
+          echo "::endgroup::"
+
+          step "ship stack merge merges the stack through GitHub"
+          for n in $(gh pr list -R "$SANDBOX" --state open --json number --jq '.[].number'); do
+            gh pr ready "$n" -R "$SANDBOX"
+          done
+          ship stack merge --yes
+          [ "$(open_prs)" = 0 ] || { echo "::error::pull requests still open after the merge"; exit 1; }
+          echo "::endgroup::"
+
+          step "ship stack sync cleans up"
+          ship stack sync
+          [ "$(git branch --show-current)" = main ] || { echo "::error::not back on main"; exit 1; }
+          echo "::endgroup::"
+          echo "ok" > "$RUNNER_TEMP/step"
+      - name: clean the sandbox
+        if: always()
+        working-directory: ${{ runner.temp }}
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          set -uo pipefail
+          for n in $(gh pr list -R "$SANDBOX" --state open --json number --jq '.[].number'); do
+            gh pr close "$n" -R "$SANDBOX" --delete-branch --comment "Closed by the nightly run's clean-up."
+          done
+          rm -rf clean
+          git clone --quiet "https://github.com/$SANDBOX.git" clean && cd clean || exit 0
+          if [ -e nightly ] || [ -e docs/nightly.md ]; then
+            git rm -r --quiet --ignore-unmatch nightly docs/nightly.md
+            git commit --quiet -m "🔥 chore: remove the nightly run's files"
+            git push --quiet origin HEAD:main
+          fi
+      - name: report a failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          failed="$(cat "$RUNNER_TEMP/step" 2>/dev/null || echo "setting up")"
+          title="Nightly real run failed"
+          body="The nightly real run on GregoireF/ship-it-sandbox failed at: **$failed**.
+
+          Run: $RUN_URL"
+          existing="$(gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --title "$title" --body "$body" --label kind/test --label priority/p1 --label area/github
+          fi
