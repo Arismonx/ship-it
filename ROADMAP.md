@@ -14,7 +14,7 @@ The file uses the format of [`ship roadmap sync`](docs/how-to/plan-with-a-roadma
 - [x] A VS Code extension on the same server (in the repository; not on the Marketplace yet)
 - [x] Layered settings and an organisation policy; labels and `ROADMAP.md` kept in line with GitHub
 - [x] Builds for Linux, macOS and Windows with signed checksums and an SBOM; install scripts, Homebrew, Scoop and a Docker image
-- [ ] First release published
+- [x] First release published: [v0.1.0](https://github.com/GregoireF/ship-it/releases/tag/v0.1.0)
 
 ## 0.2: next
 - [ ] Better names: branch names and commit subjects from a finer reading of the diff, or from the host agent (MCP or skill), and a factual summary of the diff in commit and pull request bodies
