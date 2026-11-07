@@ -62,9 +62,14 @@ func (c *Client) Milestones(ctx context.Context, repo forge.Repository) ([]roadm
 }
 
 // milestoneBody writes the fields GitHub takes: due_on is an ISO 8601
-// timestamp (YYYY-MM-DDTHH:MM:SSZ), null clears it.
-func milestoneBody(m roadmap.Milestone) map[string]any {
-	body := map[string]any{"title": m.Title, "description": m.Description, "due_on": nil}
+// timestamp (YYYY-MM-DDTHH:MM:SSZ). null clears it on an update, but a
+// creation refuses it ("422 For 'properties/due_on', nil is not a string"):
+// there, no date means no due_on at all.
+func milestoneBody(m roadmap.Milestone, update bool) map[string]any {
+	body := map[string]any{"title": m.Title, "description": m.Description}
+	if update {
+		body["due_on"] = nil
+	}
 	if m.Due != "" {
 		if day, err := time.Parse("2006-01-02", m.Due); err == nil {
 			body["due_on"] = day.UTC().Format(time.RFC3339)
@@ -76,13 +81,13 @@ func milestoneBody(m roadmap.Milestone) map[string]any {
 // CreateMilestone implements ports.Tracker.
 func (c *Client) CreateMilestone(ctx context.Context, repo forge.Repository, m roadmap.Milestone) (int, error) {
 	var out milestoneJSON
-	err := c.do(ctx, repo, http.MethodPost, repoPath(repo)+"/milestones", milestoneBody(m), &out)
+	err := c.do(ctx, repo, http.MethodPost, repoPath(repo)+"/milestones", milestoneBody(m, false), &out)
 	return out.Number, err
 }
 
 // UpdateMilestone implements ports.Tracker.
 func (c *Client) UpdateMilestone(ctx context.Context, repo forge.Repository, m roadmap.Milestone) error {
-	return c.do(ctx, repo, http.MethodPatch, fmt.Sprintf("%s/milestones/%d", repoPath(repo), m.Number), milestoneBody(m), nil)
+	return c.do(ctx, repo, http.MethodPatch, fmt.Sprintf("%s/milestones/%d", repoPath(repo), m.Number), milestoneBody(m, true), nil)
 }
 
 // DeleteMilestone implements ports.Tracker.

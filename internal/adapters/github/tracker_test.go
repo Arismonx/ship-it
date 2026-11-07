@@ -43,11 +43,20 @@ func TestTrackerRequests(t *testing.T) {
 	if _, err := c.CreateMilestone(ctx, repo, roadmap.Milestone{Title: "Phase 2", Due: "2027-01-31"}); err != nil {
 		t.Fatal(err)
 	}
+	// Without a date: no due_on on a creation (GitHub refuses null there), null on an update (it clears the date).
+	if _, err := c.CreateMilestone(ctx, repo, roadmap.Milestone{Title: "Later"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.UpdateMilestone(ctx, repo, roadmap.Milestone{Number: 1, Title: "Phase 1"}); err != nil {
+		t.Fatal(err)
+	}
 	if err := c.SetParent(ctx, repo, 1, 14); err != nil {
 		t.Fatal(err)
 	}
 	for _, want := range []string{
 		`POST /repos/acme/shop/milestones {"description":"","due_on":"2027-01-31T00:00:00Z","title":"Phase 2"}`,
+		`POST /repos/acme/shop/milestones {"description":"","title":"Later"}`,
+		`PATCH /repos/acme/shop/milestones/1 {"description":"","due_on":null,"title":"Phase 1"}`,
 		`POST /repos/acme/shop/issues/1/sub_issues {"replace_parent":true,"sub_issue_id":14}`,
 	} {
 		found := false
