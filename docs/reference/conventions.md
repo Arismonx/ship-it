@@ -72,8 +72,9 @@ The body says only what is true and known, the way a careful author writes it:
 
 - The why comes from the developer: the prose of the commit bodies (trailers such as `Signed-off-by:` and lines that only link issues are dropped). Google's guidance on change descriptions asks for "the problem being solved" and "why this approach"; a diff cannot tell it, so ship-it never makes it up.
 - One commit: the title says what changed, the body gives the why. Several commits: their subjects are listed as sentences, without the `type(scope):` syntax.
+- A summary of the diff closes it, read by git on the pushed branch: the files added, changed, renamed and removed (named up to three), and the declarations added and removed (named up to six), for example **Changes:** 2 files: 1 added (`vat.go`), 1 changed. Added `WithVAT`. A declaration whose signature changed is in neither list. `ship.pullRequest.sections.changes: false` leaves it out.
 - Testing lists the checks ship-it really ran before the push (the gates), or says plainly that they were skipped (`--skip-gates`).
-- No empty section, no placeholder. A one-line commit without issue gives an empty body: the title says it all.
+- No empty section, no placeholder. A one-line commit without issue gives a body with the summary of the diff alone.
 - No visible signature. An invisible `<!-- ship-it -->` comment marks the pull requests ship-it wrote.
 - AI assistance is disclosed the repository's way (policies differ: Kubernetes forbids assisted-by trailers, Linux requires them, Rust cites "Generated with Claude Code" as poor disclosure): 1) the AI section of the repository's template, filled; 2) else the repository's own AI label (`ai-assisted`, `ai-generated`, `llm-generated`…), applied; 3) else one factual sentence, without a tool signature: *The commit message was drafted with AI assistance (mistral-small).*, or `host agent` when the MCP client's model wrote it. Never a git trailer.
 

@@ -51,6 +51,8 @@ type FakeGit struct {
 	LayerStats map[string][]ports.FileStat
 	// PushedDiff is the patch of the commits a push would send (CommitPatches).
 	PushedDiff string
+	// BranchDiff is the net diff of the branch on its base (DiffSince).
+	BranchDiff string
 	// Generated lists paths marked linguist-generated.
 	Generated map[string]bool
 	// Comparisons maps a ref to {ahead, behind} for CompareWith.
@@ -272,6 +274,9 @@ func (f FakeGit) ReadFileAt(_ context.Context, _, path string, limit int64) ([]b
 
 // CommitPatches implements ports.Git with PushedDiff.
 func (f FakeGit) CommitPatches(context.Context, []string) (string, error) { return f.PushedDiff, nil }
+
+// DiffSince implements ports.Git with BranchDiff.
+func (f FakeGit) DiffSince(context.Context, string) (string, error) { return f.BranchDiff, nil }
 
 // DiffStatSince implements ports.Git.
 func (f FakeGit) DiffStatSince(context.Context, string) ([]ports.FileStat, error) {

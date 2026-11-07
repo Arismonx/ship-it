@@ -431,6 +431,11 @@
                 "sections": {
                   "additionalProperties": false,
                   "properties": {
+                    "changes": {
+                      "default": true,
+                      "description": "Sum up the diff in the pull request body: the files added, changed, renamed and removed, and the declarations added and removed.",
+                      "type": "boolean"
+                    },
                     "issue": {
                       "default": true,
                       "description": "Link the issue (Closes #12) in ship's own pull request body.",

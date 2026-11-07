@@ -151,6 +151,10 @@ type Git interface {
 	// DiffStatSince returns the files changed in base...HEAD with their line
 	// counts; with base "" those of HEAD alone. Renames count as delete + add.
 	DiffStatSince(ctx context.Context, base string) ([]FileStat, error)
+	// DiffSince returns the unified diff of base...HEAD without context lines,
+	// renames found, or of HEAD alone when base is "": the net change a pull
+	// request shows.
+	DiffSince(ctx context.Context, base string) (string, error)
 	// DiffStatBetween returns the files changed in base...head: the work of
 	// one layer of a stack, whatever is checked out.
 	DiffStatBetween(ctx context.Context, base, head string) ([]FileStat, error)

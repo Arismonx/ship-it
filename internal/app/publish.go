@@ -518,6 +518,12 @@ func publish(ctx context.Context, ws Workspace, req PublishRequest) (PublishResu
 			AIAssistant: aiAssistantOf(ctx, ws, deliveredAs),
 			Omit:        pullrequest.Omit{Why: !prSettings.Sections.Why, Testing: !prSettings.Sections.Testing, Issue: !prSettings.Sections.Issue},
 		}
+		if prSettings.Sections.Changes {
+			// A summary is a help, never a reason to stop the publication.
+			if diff, err := ws.Git.DiffSince(ctx, base); err == nil {
+				in.Changes = pullrequest.ChangesOf(snapshot.ParseUnifiedDiff(diff))
+			}
+		}
 		if issue > 0 {
 			// Context only: a missing or private issue changes nothing.
 			in.IssueTitle, _ = ws.Forge.IssueTitle(ctx, repo, issue)

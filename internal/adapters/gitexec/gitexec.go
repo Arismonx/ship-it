@@ -751,6 +751,17 @@ func (c *Client) DiffStatSince(ctx context.Context, base string) ([]ports.FileSt
 	return ParseNumstat(out)
 }
 
+// DiffSince implements ports.Git.
+func (c *Client) DiffSince(ctx context.Context, base string) (string, error) {
+	args := []string{"-c", "core.quotePath=false", "diff", "--no-color", "--no-ext-diff", "--find-renames", "-U0", base + "...HEAD", "--"}
+	if base == "" {
+		args = []string{"-c", "core.quotePath=false", "diff-tree", "-p", "--root", "--no-commit-id", "--no-color",
+			"--no-ext-diff", "--find-renames", "-U0", "-r", "HEAD"}
+	}
+	out, err := c.Run(ctx, args...)
+	return string(out), err
+}
+
 // DiffStatBetween implements ports.Git.
 func (c *Client) DiffStatBetween(ctx context.Context, base, head string) ([]ports.FileStat, error) {
 	out, err := c.Run(ctx, "diff", "--numstat", "-z", "--no-renames", base+"..."+head, "--")

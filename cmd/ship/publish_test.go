@@ -113,8 +113,9 @@ func TestShipPublishes(t *testing.T) {
 	if pr["head"] != branch || pr["base"] != "main" || pr["draft"] != true || !strings.HasPrefix(pr["title"].(string), "✨ feat") {
 		t.Errorf("pull request = %v", pr)
 	}
-	// One commit without a body: the title says it all, the body adds nothing.
-	if pr["body"] != "<!-- ship-it -->\n" {
+	// One commit without a body: the title says why; the body only sums up
+	// the diff, read by git on the pushed branch.
+	if pr["body"] != "**Changes:** 1 file: 1 added (`vat.go`).\n\n<!-- ship-it -->\n" {
 		t.Errorf("body:\n%s", pr["body"])
 	}
 	if !strings.Contains(stderr, "Draft pull request #1") || strings.TrimSpace(stdout[strings.LastIndex(strings.TrimSpace(stdout), "\n")+1:]) != "https://github.com/acme/shop/pull/1" {

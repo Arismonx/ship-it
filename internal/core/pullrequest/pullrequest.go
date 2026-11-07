@@ -41,6 +41,9 @@ type BodyInput struct {
 	Keyword    convention.IssueKeyword
 	// Commits are the commits of the branch, oldest first.
 	Commits []Commit
+	// Changes are the facts of the branch's diff, summed up after the why;
+	// the zero value says nothing (ship.pullRequest.sections.changes off).
+	Changes Changes
 	// Checks are the commands that passed locally before the push.
 	Checks []string
 	// ChecksSkipped: the local checks were skipped (--skip-gates); reviewers
@@ -110,7 +113,8 @@ func Compose(in BodyInput) Sections {
 		}
 		summary = strings.TrimSpace(summary + "\n\n" + list.String())
 	}
-	s.Summary = strings.TrimSpace(summary)
+	// The facts of the diff close the summary: what changed, after why.
+	s.Summary = strings.TrimSpace(summary + "\n\n" + in.Changes.Line())
 
 	var testing []string
 	switch {

@@ -282,6 +282,7 @@ type Sections struct {
 	Why     bool `json:"why" doc:"Write the why of the commits (their bodies) in ship's own pull request body."`
 	Testing bool `json:"testing" doc:"Write the Testing section (the checks that passed locally, the Tested: notes) in ship's own pull request body."`
 	Issue   bool `json:"issue" doc:"Link the issue (Closes #12) in ship's own pull request body."`
+	Changes bool `json:"changes" doc:"Sum up the diff in the pull request body: the files added, changed, renamed and removed, and the declarations added and removed."`
 }
 
 // Values of ship.pullRequest.template other than a path.
@@ -350,7 +351,7 @@ func Defaults() Settings {
 			PullRequest: PullRequestSettings{Draft: DraftUnattended, Labels: true,
 				LabelPrefixes: LabelPrefixes{Kind: pullrequest.DefaultKindPrefix, Size: pullrequest.DefaultSizePrefix},
 				Sizes:         DefaultSizes(), MaxLines: 400, Template: TemplateAuto,
-				Sections:  Sections{Why: true, Testing: true, Issue: true},
+				Sections:  Sections{Why: true, Testing: true, Issue: true, Changes: true},
 				Reviewers: []string{}, TeamReviewers: []string{}, Milestone: MilestoneIssue},
 			Issues:  IssueSettings{Keyword: "Closes", TrackerKeys: []string{}},
 			Secrets: SecretsSettings{IgnorePaths: []string{}, Rules: []SecretRule{}, DisabledRules: []string{}, Allow: []string{}},

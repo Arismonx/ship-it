@@ -6,6 +6,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Added
 
+- The pull request body sums up the diff: the files added, changed, renamed and removed, and the declarations added and removed (`ship.pullRequest.sections.changes`, on by default) (#32).
 - `ship roadmap sync` keeps what people write in an issue below its `Tracked in ROADMAP.md` line: the file owns the title and the summary, the issue can hold the details for contributors.
 
 ## [0.1.1] - 2026-11-07

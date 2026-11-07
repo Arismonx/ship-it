@@ -59,14 +59,25 @@ func TestPullRequestLabelPrefixesAndSizes(t *testing.T) {
 func TestPullRequestSections(t *testing.T) {
 	git := publishableGit(nil)
 	git.CommitMessages = []string{"✨ feat: add vat\n\nThe EU changed its VAT rules.\n\nTested: by hand"}
+	git.BranchDiff = "diff --git a/vat.go b/vat.go\nnew file mode 100644\n--- /dev/null\n+++ b/vat.go\n@@ -0,0 +1 @@\n+func WithVAT() {}\n"
 	forge := &testkit.FakeForge{}
 	ws, _ := publishWorkspace(git, forge)
-	ws.Config = &testkit.FakeConfigFiles{Repository: `{"ship": {"pullRequest": {"sections": {"why": false, "testing": false, "issue": false}}}}`}
+	ws.Config = &testkit.FakeConfigFiles{Repository: `{"ship": {"pullRequest": {"sections": {"why": false, "testing": false, "issue": false, "changes": false}}}}`}
 	if _, err := Publish(context.Background(), ws, PublishRequest{}); err != nil {
 		t.Fatal(err)
 	}
 	if body := forge.Created[0].Body; body != pullrequest.Marker+"\n" {
 		t.Errorf("body = %q: every section is off", body)
+	}
+
+	// On by default: the facts of the branch's diff close the summary.
+	forge = &testkit.FakeForge{}
+	ws, _ = publishWorkspace(git, forge)
+	if _, err := Publish(context.Background(), ws, PublishRequest{}); err != nil {
+		t.Fatal(err)
+	}
+	if body := forge.Created[0].Body; !strings.Contains(body, "**Changes:** 1 file: 1 added (`vat.go`). Added `WithVAT`.") {
+		t.Errorf("body = %q: want the summary of the diff", body)
 	}
 }
 

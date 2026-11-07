@@ -166,6 +166,10 @@ var newDefinition = regexp.MustCompile(`^\s*(func\s|def\s|class\s|fn\s|pub\s+(fn
 // line rewritten in place (its signature changed) is not taken for a new one.
 var declarationName = regexp.MustCompile(`^\s*(?:(?:public|protected)\s+[\w<>\[\], ]+\s+(\w+)\s*\(|(?:func\s+(?:\([^)]*\)\s*)?|def\s+|class\s+|fn\s+|pub\s+(?:fn|struct|enum|trait)\s+|type\s+|export\s+(?:default\s+)?(?:async\s+)?(?:function|class|const|interface|type)\s+)(\w+))`)
 
+// DeclaredName returns the name a line of code declares (a function, a type,
+// a class…), or "" when it declares nothing that can be named.
+func DeclaredName(line string) string { return nameOf(line) }
+
 func nameOf(line string) string {
 	if !newDefinition.MatchString(line) {
 		return ""

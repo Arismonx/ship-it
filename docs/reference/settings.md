@@ -33,6 +33,7 @@ Every key of `.github/ship.json`, the user file, presets, contexts and overrides
 | `ship.pullRequest.sections.why` | boolean | `true` | `SHIP_PULLREQUEST_SECTIONS_WHY` | Write the why of the commits (their bodies) in ship's own pull request body. |
 | `ship.pullRequest.sections.testing` | boolean | `true` | `SHIP_PULLREQUEST_SECTIONS_TESTING` | Write the Testing section (the checks that passed locally, the Tested: notes) in ship's own pull request body. |
 | `ship.pullRequest.sections.issue` | boolean | `true` | `SHIP_PULLREQUEST_SECTIONS_ISSUE` | Link the issue (Closes #12) in ship's own pull request body. |
+| `ship.pullRequest.sections.changes` | boolean | `true` | `SHIP_PULLREQUEST_SECTIONS_CHANGES` | Sum up the diff in the pull request body: the files added, changed, renamed and removed, and the declarations added and removed. |
 | `ship.pullRequest.reviewers` | list of strings | `[]` | `SHIP_PULLREQUEST_REVIEWERS` | Logins whose review is requested on a new pull request (never its author). A request GitHub refuses is a warning. |
 | `ship.pullRequest.teamReviewers` | list of strings | `[]` | `SHIP_PULLREQUEST_TEAMREVIEWERS` | Teams of the repository's organisation, by slug, whose review is requested on a new pull request. A request GitHub refuses is a warning. |
 | `ship.pullRequest.assignSelf` | boolean | `false` | `SHIP_PULLREQUEST_ASSIGNSELF` | Assign a new pull request to its author. |

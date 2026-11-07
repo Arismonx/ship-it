@@ -334,6 +334,12 @@ func (d *dryGit) CommitPatches(ctx context.Context, exclude []string) (string, e
 	return d.git.CommitPatches(ctx, exclude)
 }
 
+// DiffSince reads the branch as it is: the planned commits are not in it,
+// so a rehearsed pull request body summarises what is already committed.
+func (d *dryGit) DiffSince(ctx context.Context, base string) (string, error) {
+	return d.git.DiffSince(ctx, base)
+}
+
 // DiffStatSince adds the files of the planned commits.
 func (d *dryGit) DiffStatSince(ctx context.Context, base string) ([]ports.FileStat, error) {
 	stats, err := d.git.DiffStatSince(ctx, base)

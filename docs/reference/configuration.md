@@ -193,7 +193,7 @@ How ship commits, and how it brings a branch up to date before publishing. The d
 | `ship.pullRequest.labelPrefixes.kind` | `"kind/"` | prefix of the kind labels |
 | `ship.pullRequest.labelPrefixes.size` | `"size/"` | prefix of the size labels |
 | `ship.pullRequest.sizes` | Kubernetes' scale | size labels: name → changed lines under which it applies |
-| `ship.pullRequest.sections` | all `true` | `why`, `testing`, `issue`: the parts of ship's own body |
+| `ship.pullRequest.sections` | all `true` | `why`, `testing`, `issue`, `changes`: the parts of ship's own body |
 | `ship.pullRequest.reviewers` | `[]` | logins asked to review a new pull request |
 | `ship.pullRequest.teamReviewers` | `[]` | teams of the organisation, by slug, asked to review it |
 | `ship.pullRequest.assignSelf` | `false` | assign a new pull request to its author |
@@ -216,7 +216,7 @@ How ship commits, and how it brings a branch up to date before publishing. The d
 - **Drafts.** Work in progress commits, `ship publish --draft` and AI agents always open a draft, whatever the setting: an agent's work is reviewed on GitHub before it is ready.
 - **Base.** Closing keywords only work on pull requests to the default branch (GitHub Docs, "Linking a pull request to an issue"). On another base, ship links the issue with `Refs` and leaves its project status alone. The branch is brought up to date with that base.
 - **Sizes.** The default is `{"XS": 10, "S": 30, "M": 100, "L": 500, "XL": 1000, "XXL": 0}`: `XS` under 10 changed lines, generated files excluded, and so on; `0` marks the size of everything larger (one size at most). Two sizes cannot share a threshold. A layer replaces the whole table. Without a `0` size, a pull request larger than every threshold gets no size label. `ship sync` creates the labels the prefixes and sizes name; `ship publish` only uses the ones the repository has.
-- **Sections.** They shape ship's own body; a repository template, when one applies, places the parts itself. `why: false` leaves out the commit bodies (several commits are still listed).
+- **Sections.** They shape ship's own body; a repository template, when one applies, places the parts itself. `why: false` leaves out the commit bodies (several commits are still listed). `changes: false` leaves out the summary of the diff, which a repository template otherwise gets at the end of its summary part.
 - **Reviews, assignee, milestone.** They apply to a new pull request, never to an updated one, and never ask the author to review their own work. The pull request exists by then, so a refusal (a reviewer without access to the repository, no triage right) is a warning. `ship undo` takes the pull request out of the milestone before closing it; the review requests and the assignee stay on the closed pull request.
 
 ### Forks

@@ -140,6 +140,7 @@ func TestFlatten(t *testing.T) {
 		{"ship.pullRequest.sections.why", "true"},
 		{"ship.pullRequest.sections.testing", "true"},
 		{"ship.pullRequest.sections.issue", "true"},
+		{"ship.pullRequest.sections.changes", "true"},
 		{"ship.pullRequest.reviewers", "[]"},
 		{"ship.pullRequest.teamReviewers", "[]"},
 		{"ship.pullRequest.assignSelf", "false"},
