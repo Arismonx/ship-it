@@ -2,15 +2,18 @@
 # Copyright 2026 Grégoire Favreau
 #
 # Labels as code (docs/design/workflows.md §9), dogfooding: when
-# .github/ship.json changes on main, `ship sync --yes` brings the GitHub
-# labels in line with it (create, rename, recolour; never deletes). ship is
-# built from main itself and reads the job token from GH_TOKEN.
+# .github/ship.json or this workflow changes on main, `ship sync --yes`
+# brings the GitHub labels in line with ship's taxonomy and the settings
+# (create, rename, recolour; never deletes). The workflow's own path is there
+# so a new repository gets its labels with the first push of this file, even
+# without a .github/ship.json. ship is built from main itself and reads the
+# job token from GH_TOKEN.
 name: labels
 
 on:
   push:
     branches: [main]
-    paths: [".github/ship.json"]
+    paths: [".github/ship.json", ".github/workflows/labels.yml"]
   workflow_dispatch:
 
 # Nothing by default; the job asks for what it needs.
