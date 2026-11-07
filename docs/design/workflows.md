@@ -69,7 +69,7 @@ Written in English. Follows [zizmor](https://docs.zizmor.sh)'s audits. Nothing h
 
 | Workflow | Trigger | Permissions (job level) | Why |
 |---|---|---|---|
-| `ci.yml` | `pull_request`, push to `main` | `contents: read` | Quality gate (§1), same steps as `go run ./tools/check`. |
+| `ci.yml` | `pull_request`, push to `main` | `contents: read`; `coverage` also `id-token: write` | Quality gate (§1), same steps as `go run ./tools/check`. The `coverage` job sends the test coverage to Codecov with OIDC (no token), from this repository's branches only; it never fails the pull request. |
 | `pr-title.yml` | `pull_request` (opened, edited, synchronize, reopened) | `contents: read` | PR title checked by our own action [`actions/check-title`](../../actions/check-title) built from this commit (`version: source`, §6); the title goes through `env:`. |
 | `zizmor.yml` | `pull_request`, push to `main` | `zizmor`: `contents: read`, `actions: read`. `zizmor-sarif` (if `CODE_SCANNING`): same + `security-events: write`. `actionlint`: `contents: read` | Workflows hold tokens: an injection or an over-broad permission is a supply-chain hole. `zizmor` fails the PR on any finding (annotations); `zizmor-sarif` sends findings to the Security tab (that mode never fails, by design of zizmor-action); `actionlint` checks syntax, expressions and `run:` scripts (shellcheck). |
 | `codeql.yml` | `pull_request`, push to `main`, weekly | `contents: read`, `actions: read`, `security-events: write`; only if `CODE_SCANNING` | Data-flow analysis that staticcheck and govulncheck do not do. Languages: `go` (manual build, `go build ./...`), `javascript-typescript` (extension), `actions` (workflows). Query suite `security-extended`. |
@@ -142,7 +142,7 @@ Why a formula and not a cask. The macOS binaries are not signed nor notarized (n
 10. **GitHub App for `dependabot-gen.yml`** (so that the checks run on the regenerated commit, §10): Settings (of the account) → Developer settings → GitHub Apps → **New GitHub App**: name it (for example `ship-it-dependabot-gen`), any homepage URL (the repository), **Webhook: untick Active**, **Repository permissions: Contents → Read and write** and nothing else (Metadata read-only is added by GitHub and cannot be removed), **Where can this GitHub App be installed: Only on this account**. Create it, note its **Client ID** (not the App ID: `actions/create-github-app-token` v3 deprecates `app-id` for `client-id`), **Generate a private key** (a `.pem` file). **Install App** → this account → **Only select repositories** → `ship-it`. Then in the repository: Settings → Secrets and variables → **Dependabot** → New repository secret `APP_CLIENT_ID` (the client ID) and `APP_PRIVATE_KEY` (the whole `.pem`, header and footer lines included); delete the `.pem` from the disk. They must be **Dependabot** secrets: a Dependabot-triggered run reads no Actions or environment secret. Without them, the workflow keeps pushing with the job token and prints a notice.
 
 ### Not done yet
-GoReleaser publishers for WinGet and npm, deb and rpm packages, Windows code signing, macOS notarization, nightly, merged coverage, benchstat.
+GoReleaser publishers for WinGet and npm, deb and rpm packages, Windows code signing, macOS notarization, nightly, coverage of the VS Code extension, benchstat.
 
 Known limit: on a pull request from a fork, GitHub downgrades `security-events: write` to read, so the SARIF uploads (`zizmor-sarif`, `codeql`) fail there; the blocking `zizmor` and `actionlint` jobs still run.
 

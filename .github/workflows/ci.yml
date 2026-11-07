@@ -63,6 +63,33 @@ jobs:
       - name: budgets
         run: go run ./tools/bench
 
+  # Test coverage, sent to Codecov (docs/design/workflows.md §1). OIDC proves
+  # the upload comes from this repository: no token to keep. A fork's pull
+  # request gets no OIDC token, so only this repository's branches upload, and
+  # a Codecov outage never fails the pull request.
+  coverage:
+    name: coverage
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write # OIDC token for Codecov's tokenless upload
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      # -coverpkg counts the code the end-to-end tests of cmd/ship run too.
+      - name: test
+        run: go test -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...
+      - uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          files: coverage.out
+          use_oidc: true
+          fail_ci_if_error: false
   extension:
     name: extension (${{ matrix.os }})
     strategy:

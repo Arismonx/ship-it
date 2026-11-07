@@ -14,7 +14,10 @@ It serves people as much as agents. One command, `ship`, creates the branch, the
 0.1, early: works on Linux, macOS and Windows, with GitHub. What comes next is in the [roadmap](ROADMAP.md).
 
 [![CI](https://github.com/GregoireF/ship-it/actions/workflows/ci.yml/badge.svg)](https://github.com/GregoireF/ship-it/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/GregoireF/ship-it/actions/workflows/codeql.yml/badge.svg)](https://github.com/GregoireF/ship-it/actions/workflows/codeql.yml)
+[![Coverage](https://codecov.io/gh/GregoireF/ship-it/graph/badge.svg)](https://codecov.io/gh/GregoireF/ship-it)
 [![Release](https://img.shields.io/github/v/release/GregoireF/ship-it?sort=semver)](https://github.com/GregoireF/ship-it/releases)
+[![Downloads](https://img.shields.io/github/downloads/GregoireF/ship-it/total)](https://github.com/GregoireF/ship-it/releases)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/GregoireF/ship-it/badge)](https://scorecard.dev/viewer/?uri=github.com/GregoireF/ship-it)
 [![Go Report Card](https://goreportcard.com/badge/github.com/GregoireF/ship-it)](https://goreportcard.com/report/github.com/GregoireF/ship-it)
 [![Go Reference](https://pkg.go.dev/badge/github.com/GregoireF/ship-it.svg)](https://pkg.go.dev/github.com/GregoireF/ship-it)
@@ -22,6 +25,7 @@ It serves people as much as agents. One command, `ship`, creates the branch, the
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 [![Go 1.27](https://img.shields.io/badge/go-1.27-00ADD8?logo=go&logoColor=white)](go.mod)
 [![Platforms](https://img.shields.io/badge/platforms-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey)](#install)
+[![Good first issues](https://img.shields.io/github/issues/GregoireF/ship-it/good%20first%20issue?label=good%20first%20issues&color=7057ff)](https://github.com/GregoireF/ship-it/issues?q=is%3Aopen+label%3A%22good+first+issue%22)
 
 [Install](#install) · [Quick start](#quick-start) · [Documentation](docs/README.md) · [Compared to GitHub](docs/explanation/compared-to-github.md) · [Roadmap](ROADMAP.md)
 
