@@ -30,6 +30,7 @@ ship shows the plan (milestones and issues to create or update, boxes to tick) a
 
 - Closing an issue on GitHub (a merged pull request does it) ticks its box at the next sync; ticking a box closes the issue.
 - Removing an item closes its issue as *not planned*; ship never deletes anything.
+- The title and the first part of a body come from the file, and the next sync rewrites them. To give an issue more context (why it matters, where to start in the code, what done means), write it on GitHub **below the line `Tracked in ROADMAP.md`**: that part belongs to people, and every sync keeps it as it is.
 - `ship undo` reverts a sync, after you confirm, because it changes GitHub.
 
 The full rules are in [the roadmap design](../design/github-automation.md#6-planning-roadmapmd--github).

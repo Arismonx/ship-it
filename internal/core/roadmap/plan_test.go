@@ -5,6 +5,7 @@ package roadmap
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/GregoireF/ship-it/internal/core/convention"
@@ -120,5 +121,27 @@ func TestHandWrittenIssuesKeepTheirContent(t *testing.T) {
 	plan := Plan(r, remote, nil, Options{})
 	if len(plan) != 1 || plan[0].Kind != UpdateIssue || plan[0].Title != "" || plan[0].Body != "" {
 		t.Fatalf("only the milestone is set on a hand-written issue: %+v", plan)
+	}
+}
+
+// TestHandWrittenDetailsSurviveASync: text below the marker of a managed issue
+// is the contributors' context; a sync rewrites what is above and keeps it.
+func TestHandWrittenDetailsSurviveASync(t *testing.T) {
+	details := "\n\n## Context\n\nWhy it matters.\n\n## Where to start\n\n- internal/core/plan"
+	r := Parse([]byte("## P\n- [ ] CLI #4\n  New summary.\n"))
+	old := issueBody(Item{Text: "CLI", Description: []string{"Old summary."}}, Phase{Title: "P"}, "") + details
+	remote := Remote{Milestones: []Milestone{{Number: 5, Title: "P", Open: true}}, Issues: []Issue{{Number: 4, Title: "CLI", Body: old, Open: true, Milestone: 5}}}
+	plan := Plan(r, remote, nil, Options{})
+	if len(plan) != 1 || plan[0].Kind != UpdateIssue || !strings.HasPrefix(plan[0].Body, "New summary.") || !strings.HasSuffix(plan[0].Body, Marker+details) {
+		t.Fatalf("plan = %+v", plan)
+	}
+	// Nothing changed above the marker: nothing to update.
+	same := issueBody(Item{Text: "CLI", Description: []string{"New summary."}}, Phase{Title: "P"}, "") + details
+	remote.Issues[0].Body = same
+	if plan := Plan(r, remote, nil, Options{}); len(plan) != 0 {
+		t.Fatalf("details alone must not make an update: %+v", plan)
+	}
+	if HandWritten("no marker") != "" || HandWritten("a"+Marker) != "" {
+		t.Error("HandWritten without text below the marker")
 	}
 }

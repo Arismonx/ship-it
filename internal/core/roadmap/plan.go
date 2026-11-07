@@ -10,9 +10,20 @@ import (
 	"github.com/GregoireF/ship-it/internal/core/convention"
 )
 
-// Marker ends the body of every issue ship-it manages from the roadmap:
+// Marker ends the part of an issue's body that ship-it writes from the roadmap:
 // invisible on GitHub, it tells ship-it which issues it may rewrite or close.
+// Text below it is written by people (context, pointers, open questions) and
+// a sync keeps it as it is.
 const Marker = "<!-- ship-it:roadmap -->"
+
+// HandWritten is the part of a managed issue's body below the marker, kept by
+// every sync, or "" when there is none.
+func HandWritten(body string) string {
+	if i := strings.Index(body, Marker); i >= 0 {
+		return body[i+len(Marker):]
+	}
+	return ""
+}
 
 // Milestone is a milestone as GitHub has it.
 type Milestone struct {
@@ -195,8 +206,10 @@ func planItem(item Item, phase Phase, milestone, parentLine, parentNumber int, b
 	update := Change{Kind: UpdateIssue, Phase: phase.Title, Line: item.Line, Number: is.Number}
 	changed := is.Milestone != milestone || milestone == 0
 	if is.Managed() {
-		update.Title, update.Body = item.Title(), body
-		changed = changed || is.Title != item.Title() || is.Body != body
+		// The text people wrote below the marker stays.
+		full := body + HandWritten(is.Body)
+		update.Title, update.Body = item.Title(), full
+		changed = changed || is.Title != item.Title() || is.Body != full
 	}
 	if changed {
 		plan = append(plan, update)
