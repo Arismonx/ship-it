@@ -64,6 +64,13 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+    ignore:
+      # The VS Code API types must match engines.vscode in package.json: newer
+      # types would let the extension call APIs that older VS Code lacks.
+      - dependency-name: "@types/vscode"
+      # Node's types follow the Node that VS Code ships (22), not the latest.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     groups:
       npm-dev:
         dependency-type: development
