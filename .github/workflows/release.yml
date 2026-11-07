@@ -95,7 +95,7 @@ jobs:
           version: v0.38.0 # pin: buildx
           cache-binary: false
       # The job's own token: packages: write above, nothing stored in secrets.
-      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
