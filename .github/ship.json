@@ -6,6 +6,25 @@
     "project": {
       "url": "https://github.com/users/GregoireF/projects/1",
       "phaseField": "Phase"
+    },
+    // One area/ label per part of the product, so that a contributor can
+    // filter what they know. `ship sync` creates them.
+    "labels": {
+      "areas": [
+        "cli",
+        "mcp",
+        "stack",
+        "roadmap",
+        "checks",
+        "secrets",
+        "undo",
+        "conventions",
+        "config",
+        "github",
+        "vscode",
+        "release",
+        "docs"
+      ]
     }
   }
 }
