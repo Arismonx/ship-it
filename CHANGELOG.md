@@ -4,6 +4,8 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-07
+
 First release.
 
 ### Delivering work
@@ -68,4 +70,5 @@ First release.
 - Licensed under the Apache License 2.0.
 - English and French interface.
 
-[Unreleased]: https://github.com/GregoireF/ship-it/commits/main
+[Unreleased]: https://github.com/GregoireF/ship-it/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/GregoireF/ship-it/releases/tag/v0.1.0
