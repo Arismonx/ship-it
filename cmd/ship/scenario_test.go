@@ -71,7 +71,12 @@ func (s *scenario) write(name, content string) {
 
 // ship runs the CLI and returns its exit code, stdout and stderr.
 func (s *scenario) ship(args ...string) (int, string, string) {
+	return s.shipWith(cli.BuildInfo{}, args...)
+}
+
+// shipWith runs the CLI with a build identity, for the version command.
+func (s *scenario) shipWith(build cli.BuildInfo, args ...string) (int, string, string) {
 	var out, errOut bytes.Buffer
-	code := cli.Run(context.Background(), args, cli.Streams{Out: &out, Err: &errOut}, i18n.English, cli.BuildInfo{}, s.deps)
+	code := cli.Run(context.Background(), args, cli.Streams{Out: &out, Err: &errOut}, i18n.English, build, s.deps)
 	return code, out.String(), errOut.String()
 }

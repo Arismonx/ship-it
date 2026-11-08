@@ -950,6 +950,12 @@ func (r runner) version(args []string) int {
 			"version": r.build.Version, "commit": r.build.Commit, "date": r.build.Date, "go": runtime.Version(),
 		})
 	}
+	// A go install (or a local build) records no commit and no date: the
+	// placeholders would only be noise, the version alone is the answer.
+	if r.build.Commit == "none" && r.build.Date == "unknown" {
+		fmt.Fprintf(r.streams.Out, "ship %s\n", r.build.Version)
+		return ExitOK
+	}
 	fmt.Fprintf(r.streams.Out, "ship %s (%s, %s)\n", r.build.Version, r.build.Commit, r.build.Date)
 	return ExitOK
 }

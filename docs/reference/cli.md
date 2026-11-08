@@ -428,7 +428,7 @@ Other servers in the file are kept. The command is `ship` from the `PATH`, never
 
 ### `ship version`
 
-Prints the version, the commit and the build date; `--json` prints them with the Go version. `ship --version` does the same. A binary built with `go install` reads them from Go's build information.
+Prints the version, the commit and the build date; `--json` prints them with the Go version. `ship --version` does the same. A binary built with `go install` reads them from Go's build information; as it records no commit and no date, such a binary prints the version alone (`ship v0.1.0`).
 
 ### `ship help`
 
