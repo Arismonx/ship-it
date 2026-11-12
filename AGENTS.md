@@ -39,7 +39,7 @@ Developer tasks are Go programs: `go run ./tools/<task>` (no Make, no Taskfile).
 - Generated artefacts (`schemas/`, extension types) must be regenerated, not edited by hand.
 
 ## Commits and pull requests
-Format (see `docs/reference/conventions.md`): `✨ feat(scope): subject`, with the gitmoji first, a Conventional Commits type, a subject of at most 50 characters and a header of at most 72 (`ship check title` validates it). Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, security, revert, wip. Sign off commits (DCO). Never force-push `main`.
+Format (see `docs/reference/conventions.md`): `✨ feat(scope): subject`, with the gitmoji first, a Conventional Commits type, a subject of at most 50 characters and a header of at most 72 (`ship check title` validates it). Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, security, revert, wip. Sign off commits (DCO). Never force-push `main`. A user-visible change adds a fragment in `changelog.d/` (see its README), never an edit of `CHANGELOG.md`.
 
 ## Security
 Never commit secrets; never add telemetry; AI features stay opt-in. Report vulnerabilities as described in `SECURITY.md`.

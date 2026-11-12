@@ -10,6 +10,12 @@
 //
 // It fails when the version has no dated section, so that a release never
 // goes out without its notes.
+//
+// Pull requests write their entries in changelog.d/ (#148), never in
+// CHANGELOG.md, so that they do not conflict:
+//
+//	go run ./tools/releasenotes -pending                      # what the next release says
+//	go run ./tools/releasenotes -release v0.2.0 2026-12-01    # date it in CHANGELOG.md, remove the fragments
 package main
 
 import (
@@ -22,18 +28,51 @@ import (
 )
 
 func main() {
-	if len(os.Args) != 2 {
-		fmt.Fprintln(os.Stderr, "usage: go run ./tools/releasenotes <version>")
+	args := os.Args[1:]
+	if len(args) == 0 || (args[0] == "-release" && len(args) != 3) || (args[0] != "-release" && len(args) != 1) {
+		fmt.Fprintln(os.Stderr, "usage: go run ./tools/releasenotes <version> | -pending | -release <version> <YYYY-MM-DD>")
 		os.Exit(2)
 	}
-	changelog, err := os.ReadFile("CHANGELOG.md")
+	content, err := os.ReadFile("CHANGELOG.md")
 	if err == nil {
-		err = write(os.Stdout, string(changelog), os.Args[1])
+		err = run(args, string(content))
 	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "releasenotes:", err)
 		os.Exit(1)
 	}
+}
+
+func run(args []string, changelog string) error {
+	switch args[0] {
+	case "-pending", "-release":
+		fragments, files, err := readFragments(FragmentDir)
+		if err != nil {
+			return err
+		}
+		if args[0] == "-pending" {
+			notes, err := pending(changelog, fragments)
+			if err == nil {
+				fmt.Println(notes)
+			}
+			return err
+		}
+		out, err := release(changelog, fragments, args[1], args[2], "")
+		if err != nil {
+			return err
+		}
+		if err := os.WriteFile("CHANGELOG.md", []byte(out), 0o644); err != nil {
+			return err
+		}
+		for _, f := range files {
+			if err := os.Remove(f); err != nil {
+				return err
+			}
+		}
+		fmt.Fprintf(os.Stderr, "CHANGELOG.md: [%s] dated %s from %d fragments; add its summary line.\n", strings.TrimPrefix(args[1], "v"), args[2], len(files))
+		return nil
+	}
+	return write(os.Stdout, changelog, args[0])
 }
 
 // heading is a version heading of Keep a Changelog: "## [0.1.2] - 2026-11-12".

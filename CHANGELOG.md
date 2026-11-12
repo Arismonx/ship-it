@@ -4,6 +4,8 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+Entries wait in [changelog.d](changelog.d/) until the release: `go run ./tools/releasenotes -pending` shows them.
+
 ### Added
 
 - `ship doctor --deep` also checks what would fail later: the token's scopes against what the repository needs (`SHIP-E0317`, `SHIP-W0318`), the rulesets that would refuse the branch or its commits, and the project's checks, run once; what it cannot check is reported (`SHIP-W0319`). `ship_doctor` takes `deep` (#54).
