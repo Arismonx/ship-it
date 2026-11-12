@@ -22,4 +22,4 @@ Lightweight hexagonal architecture described in [ARCHITECTURE.md](../../ARCHITEC
 ## Consequences
 - `cmd/ship` is the only composition root.
 - The core returns i18n keys, never text; no prompt outside `surface`.
-- Pinned toolchain: `go 1.27` + `toolchain go1.27.3` (latest patch, `crypto/x509` security fix, V15).
+- Pinned toolchain: `go 1.27` + `toolchain go1.27.4` (latest patch: `crypto/x509` security fix, V15; then `net/http` GO-2026-6859, 2026-11-12).
