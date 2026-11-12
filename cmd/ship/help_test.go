@@ -20,7 +20,7 @@ import (
 var everyCommand = [][]string{
 	{}, {"help"}, {"plan"}, {"doctor"}, {"types"}, {"version"}, {"branch"},
 	{"checkpoint"}, {"checkpoint", "create"}, {"checkpoint", "list"}, {"checkpoint", "restore"},
-	{"undo"}, {"gc"}, {"trace"}, {"publish"}, {"status"}, {"tidy"}, {"log"}, {"fix"}, {"label"},
+	{"undo"}, {"gc"}, {"trace"}, {"publish"}, {"preview"}, {"status"}, {"tidy"}, {"log"}, {"fix"}, {"label"},
 	{"stack"}, {"stack", "status"}, {"stack", "sync"}, {"stack", "merge"}, {"stack", "publish"},
 	{"mcp"}, {"mcp", "install"},
 	{"config"}, {"config", "get"}, {"config", "set"}, {"config", "unset"}, {"config", "explain"},

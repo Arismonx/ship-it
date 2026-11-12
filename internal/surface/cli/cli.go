@@ -116,6 +116,8 @@ func (r runner) dispatch(args []string) int {
 		return r.gc(args[1:])
 	case "publish":
 		return r.publish(args[1:])
+	case "preview":
+		return r.preview(args[1:])
 	case "stack":
 		return r.stack(args[1:])
 	case "config":

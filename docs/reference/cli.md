@@ -226,6 +226,15 @@ Without an argument, the last run. `--list` lists the runs kept. See [logs](logs
 
 ## Status and repairs
 
+### `ship preview`
+
+Shows the pull request `ship publish` would open, as reviewers will read it: the title, the body as the repository's template renders it, the labels, the base, and what the publication would warn about. It rehearses the publication itself, so the preview is what you would get; nothing is pushed or opened, and GitHub is only read. When the branch already has an open pull request, it says so: publishing would push to it and keep its title and body.
+
+```text
+ship preview [--draft] [--issue N] [--json]
+```
+
+It previews committed work: run `ship --local` first, or `ship --dry-run` for uncommitted changes.
 ### `ship status`
 
 Shows where you stand and the one next thing to do: branch, ahead and behind the default branch, files not shipped, the remote branch, the open pull request with its checks and reviews, the open pull requests that change the same lines as your branch (`ship.publish.overlaps`), and what `ship undo` would revert.
@@ -577,7 +586,7 @@ These commands and features do not exist yet; see the [roadmap](../../ROADMAP.md
 
 - Automatic atomic commits: split the work into several commits by intent (0.2).
 - `ship watch` and `ship rewind`: checkpoints taken as files change, and a way back to any of them.
-- `ship preview`, `ship explain <code>`, `ship bug`, `ship skill install`, `ship uninstall` and `ship log --agent` (see the [roadmap](../../ROADMAP.md) for 0.2).
+- `ship explain <code>`, `ship bug`, `ship skill install`, `ship uninstall` and `ship log --agent` (see the [roadmap](../../ROADMAP.md) for 0.2).
 - `ship release`: compute the version, write the changelog, create the tag and the GitHub release.
 - `ship login` and `ship logout`: sign in with the GitHub device flow and keep the token in the system keychain.
 - `ship rewind`: go back to any moment of your files, from checkpoints taken while you work (0.2; today, `ship checkpoint restore <id>`).

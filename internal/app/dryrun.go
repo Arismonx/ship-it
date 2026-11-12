@@ -64,6 +64,9 @@ type rehearsal struct {
 	stats          []ports.FileStat // their files
 	operations     []oplog.Operation
 	stashed        bool
+	// pullRequest is the pull request a rehearsed publication would open,
+	// for ship preview.
+	pullRequest *ports.PullRequestSpec
 }
 
 func (r *rehearsal) plan(remote bool, key string, params ...string) {
@@ -677,6 +680,9 @@ func (d *dryForge) CreatePullRequest(_ context.Context, _ forge.Repository, spec
 		key = "app.dryrun.open_draft_pull_request"
 	}
 	d.r.plan(true, key, "title", spec.Title, "head", spec.Head, "base", spec.Base)
+	d.r.mu.Lock()
+	d.r.pullRequest = &spec
+	d.r.mu.Unlock()
 	return ports.PullRequest{Draft: spec.Draft, State: "open", HeadBranch: spec.Head}, nil
 }
 func (d *dryForge) LatestPullRequest(ctx context.Context, repo forge.Repository, branch string) (ports.PullRequest, bool, error) {
