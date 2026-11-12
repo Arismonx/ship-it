@@ -65,6 +65,35 @@ func TestPreviewScoresTheRisk(t *testing.T) {
 	}
 }
 
+// TestPreviewSuggestsReviewers: #46. CODEOWNERS of the base branch, then
+// the history: the author and bots left out, accounts asked of GitHub.
+func TestPreviewSuggestsReviewers(t *testing.T) {
+	git := publishableGit(nil)
+	git.DiffStats = []ports.FileStat{{Path: "internal/vat.go", Added: 3}}
+	if git.Files == nil {
+		git.Files = map[string]string{}
+	}
+	git.Files[".github/CODEOWNERS"] = "* @me\n/internal/ @acme/core @bob\n"
+	git.Authors = []ports.CommitAuthor{
+		{SHA: "1", Name: "Cy", Email: "cy@example.com"},
+		{SHA: "2", Name: "Me", Email: "7+me@users.noreply.github.com"},
+		{SHA: "3", Name: "dependabot[bot]", Email: "1+dependabot[bot]@users.noreply.github.com"},
+		{SHA: "4", Name: "Cy", Email: "cy@example.com"},
+		{SHA: "5", Name: "Ada", Email: "ada@example.com"},
+	}
+	forge := &testkit.FakeForge{User: ports.User{Login: "me"}, Logins: map[string]string{"1": "cy"}}
+	ws, _ := publishWorkspace(git, forge)
+	view, err := Preview(context.Background(), ws, PublishRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := view.Reviewers
+	if s == nil || strings.Join(s.Owners, ",") != "@acme/core,@bob" || len(s.People) != 2 ||
+		s.People[0].Login != "cy" || s.People[0].Commits != 2 || s.People[1].Login != "" || s.People[1].Name != "Ada" {
+		t.Fatalf("reviewers = %+v", s)
+	}
+}
+
 func TestPreviewOfABranchWithAnOpenPullRequest(t *testing.T) {
 	pr := ports.PullRequest{Number: 7, URL: "https://github.com/acme/shop/pull/7"}
 	forge := &testkit.FakeForge{Open: map[string]ports.PullRequest{"feat/42-add-vat": pr}}

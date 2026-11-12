@@ -5,9 +5,12 @@ package app
 
 import (
 	"context"
+	"strings"
 
+	"github.com/GregoireF/ship-it/internal/core/codeowners"
 	"github.com/GregoireF/ship-it/internal/core/forge"
 	"github.com/GregoireF/ship-it/internal/core/pullrequest"
+	"github.com/GregoireF/ship-it/internal/core/reviewers"
 	"github.com/GregoireF/ship-it/internal/core/risk"
 	"github.com/GregoireF/ship-it/internal/core/snapshot"
 	"github.com/GregoireF/ship-it/internal/ports"
@@ -34,6 +37,74 @@ type PreviewView struct {
 	// Risk is how carefully it needs reading, and why (#45); nil when the
 	// diff could not be read.
 	Risk *risk.Assessment `json:"risk,omitempty"`
+	// Reviewers are suggested, never requested (#46).
+	Reviewers *ReviewerSuggestion `json:"reviewers,omitempty"`
+}
+
+// ReviewerSuggestion is who could review: the CODEOWNERS owners of the
+// changed files (GitHub requests them itself once the pull request is
+// open), and the people who changed those files most in the last months.
+type ReviewerSuggestion struct {
+	Owners []string           `json:"owners,omitempty"`
+	People []reviewers.Person `json:"people,omitempty"`
+}
+
+// Suggestion limits: how far back, how many people, how many accounts
+// asked of GitHub.
+const (
+	reviewHistory = "6 months ago"
+	reviewPeople  = 3
+	reviewLookups = 5
+)
+
+// suggestReviewers reads CODEOWNERS on the base branch, then the history of
+// the changed files there; nil when there is nothing to suggest.
+func suggestReviewers(ctx context.Context, ws Workspace, repo forge.Repository, baseRef string, paths []string) *ReviewerSuggestion {
+	if len(paths) == 0 {
+		return nil
+	}
+	authorEmail, _, _ := ws.Git.ConfigValue(ctx, "user.email")
+	var authorLogin string
+	if ws.Forge != nil {
+		if me, err := ws.Forge.CurrentUser(ctx, repo); err == nil {
+			authorLogin = me.Login
+		}
+	}
+	s := &ReviewerSuggestion{}
+	for _, location := range codeowners.Locations {
+		if content, err := ws.Git.ReadFileAt(ctx, baseRef, location, codeowners.MaxBytes); err == nil {
+			s.Owners = reviewers.Owners(codeowners.Parse(content), paths, authorLogin)
+			break
+		}
+	}
+	if authors, err := ws.Git.RecentAuthors(ctx, baseRef, reviewHistory, paths); err == nil {
+		commits := make([]reviewers.Commit, 0, len(authors))
+		for _, a := range authors {
+			commits = append(commits, reviewers.Commit{SHA: a.SHA, Name: a.Name, Email: a.Email})
+		}
+		lookups := 0
+		for _, p := range reviewers.Rank(commits, authorEmail, authorLogin) {
+			if p.Login == "" && ws.Forge != nil && lookups < reviewLookups {
+				lookups++
+				login, err := ws.Forge.CommitAuthorLogin(ctx, repo, p.SHA)
+				if err != nil {
+					lookups = reviewLookups // offline or refused: names and emails only
+				}
+				p.Login = login
+			}
+			if authorLogin != "" && strings.EqualFold(p.Login, authorLogin) {
+				continue
+			}
+			s.People = append(s.People, p)
+			if len(s.People) == reviewPeople {
+				break
+			}
+		}
+	}
+	if len(s.Owners) == 0 && len(s.People) == 0 {
+		return nil
+	}
+	return s
 }
 
 // Preview rehearses ship publish and returns the pull request it would open:
@@ -60,7 +131,15 @@ func Preview(ctx context.Context, ws Workspace, req PublishRequest) (PreviewView
 		existing := result.PullRequest
 		view.Existing = &existing
 	}
-	view.Risk = assessRisk(ctx, ws, gitRemote(ctx, ws)+"/"+view.Base)
+	baseRef := gitRemote(ctx, ws) + "/" + view.Base
+	view.Risk = assessRisk(ctx, ws, baseRef)
+	if stats, err := ws.Git.DiffStatSince(ctx, baseRef); err == nil {
+		paths := make([]string, 0, len(stats))
+		for _, s := range stats {
+			paths = append(paths, s.Path)
+		}
+		view.Reviewers = suggestReviewers(ctx, ws, view.Repository, baseRef, paths)
+	}
 	return view, nil
 }
 

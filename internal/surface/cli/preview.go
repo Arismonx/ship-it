@@ -57,6 +57,22 @@ func (r runner) preview(args []string) int {
 			fmt.Fprintln(out, t("cli.preview.risk_factor", map[string]string{"points": fmt.Sprint(f.Points), "reason": t(f.Key, f.Params)}))
 		}
 	}
+	if s := view.Reviewers; s != nil {
+		fmt.Fprintln(out)
+		if len(s.Owners) > 0 {
+			fmt.Fprintln(out, t("cli.preview.owners", map[string]string{"owners": strings.Join(s.Owners, ", ")}))
+		}
+		if len(s.People) > 0 {
+			fmt.Fprintln(out, t("cli.preview.people", nil))
+			for _, p := range s.People {
+				who := p.Name + " <" + p.Email + ">"
+				if p.Login != "" {
+					who = "@" + p.Login + " (" + p.Name + ")"
+				}
+				fmt.Fprintln(out, "  "+t("cli.preview.person", map[string]string{"who": who, "count": fmt.Sprint(p.Commits)}))
+			}
+		}
+	}
 	for _, w := range view.Warnings {
 		r.status("  ⚠ " + w.Code + "  " + t(w.Key, w.Params))
 	}

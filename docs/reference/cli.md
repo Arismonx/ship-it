@@ -249,6 +249,8 @@ It ends with a review risk, low, medium or high, and the facts behind each point
 
 Generated files and lockfiles do not count as changed lines, as for the `size/` labels. Medium starts at 2 points, high at 4. The score is not added to the pull request.
 
+Then it suggests reviewers, without asking anyone: the code owners of the changed files, read from the base branch's `CODEOWNERS` (`.github/`, the root or `docs/`, with [GitHub's rules](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners); GitHub asks them itself once the pull request is open), and the three people who changed these files most in the last 6 months on the base branch. You and bots are left out. A private GitHub email gives the account directly; for the others, ship asks GitHub which account made their latest commit, five questions at most, and shows a name and an email when GitHub cannot say.
+
 ### `ship status`
 
 Shows where you stand and the one next thing to do: branch, ahead and behind the default branch, files not shipped, the remote branch, the open pull request with its checks and reviews, the open pull requests that change the same lines as your branch (`ship.publish.overlaps`), and what `ship undo` would revert.

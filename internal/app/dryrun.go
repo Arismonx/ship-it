@@ -343,6 +343,11 @@ func (d *dryGit) DiffSince(ctx context.Context, base string) (string, error) {
 	return d.git.DiffSince(ctx, base)
 }
 
+// RecentAuthors reads the history: a rehearsal changes none of it.
+func (d *dryGit) RecentAuthors(ctx context.Context, rev, since string, paths []string) ([]ports.CommitAuthor, error) {
+	return d.git.RecentAuthors(ctx, rev, since, paths)
+}
+
 // DiffStatSince adds the files of the planned commits.
 func (d *dryGit) DiffStatSince(ctx context.Context, base string) ([]ports.FileStat, error) {
 	stats, err := d.git.DiffStatSince(ctx, base)
@@ -713,6 +718,9 @@ func (d *dryForge) RequestReviewers(_ context.Context, _ forge.Repository, numbe
 }
 func (d *dryForge) CurrentUser(ctx context.Context, repo forge.Repository) (ports.User, error) {
 	return d.forge.CurrentUser(ctx, repo)
+}
+func (d *dryForge) CommitAuthorLogin(ctx context.Context, repo forge.Repository, sha string) (string, error) {
+	return d.forge.CommitAuthorLogin(ctx, repo, sha)
 }
 func (d *dryForge) ClosePullRequest(_ context.Context, _ forge.Repository, number int, _ string) error {
 	d.r.plan(true, "app.dryrun.close_pull_request", "number", strconv.Itoa(number))

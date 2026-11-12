@@ -95,6 +95,9 @@ type Forge interface {
 	RequestReviewers(ctx context.Context, repo forge.Repository, number int, users, teams []string) error
 	// CurrentUser returns the account the token belongs to, on repo's host.
 	CurrentUser(ctx context.Context, repo forge.Repository) (User, error)
+	// CommitAuthorLogin returns the GitHub account of a commit's author, ""
+	// when its email belongs to no account.
+	CommitAuthorLogin(ctx context.Context, repo forge.Repository, sha string) (string, error)
 	// ClosePullRequest leaves comment on the pull request, then closes it.
 	ClosePullRequest(ctx context.Context, repo forge.Repository, number int, comment string) error
 	// RemoveLabel takes a label off a pull request; already absent is fine.

@@ -45,6 +45,8 @@ type FakeGit struct {
 	// History is what RecentSubjects returns.
 	History   []string
 	DiffStats []ports.FileStat
+	// Authors are what RecentAuthors answers.
+	Authors []ports.CommitAuthor
 	// PushErr fails PushCommit by branch.
 	PushErr map[string]error
 	// LayerStats answer DiffStatBetween by head ("refs/heads/feat/a").
@@ -277,6 +279,11 @@ func (f FakeGit) CommitPatches(context.Context, []string) (string, error) { retu
 
 // DiffSince implements ports.Git with BranchDiff.
 func (f FakeGit) DiffSince(context.Context, string) (string, error) { return f.BranchDiff, nil }
+
+// RecentAuthors implements ports.Git with Authors.
+func (f FakeGit) RecentAuthors(context.Context, string, string, []string) ([]ports.CommitAuthor, error) {
+	return f.Authors, nil
+}
 
 // DiffStatSince implements ports.Git.
 func (f FakeGit) DiffStatSince(context.Context, string) ([]ports.FileStat, error) {
@@ -652,6 +659,8 @@ type FakeForge struct {
 	Merged []ports.PullRequest
 	// OpenPatches are the open pull requests OpenPullRequestPatches returns.
 	OpenPatches []ports.PullRequestPatches
+	// Logins are the accounts of commit authors, by commit.
+	Logins map[string]string
 	// Closed records ClosePullRequest.
 	Closed []int
 	// User is the token's account; empty means no token.
@@ -824,6 +833,11 @@ func (f *FakeForge) CreatePullRequest(_ context.Context, repo forge.Repository, 
 // Labels implements ports.Forge.
 func (f *FakeForge) Labels(context.Context, forge.Repository) ([]settings.Label, error) {
 	return f.RepositoryLabels, f.Err
+}
+
+// CommitAuthorLogin implements ports.Forge with Logins by commit.
+func (f *FakeForge) CommitAuthorLogin(_ context.Context, _ forge.Repository, sha string) (string, error) {
+	return f.Logins[sha], f.Err
 }
 
 // CurrentUser implements ports.Forge.

@@ -142,6 +142,10 @@ type Git interface {
 	// ReadFileAt returns the content of path in the tree of rev; larger than
 	// limit bytes returns ErrFileTooLarge.
 	ReadFileAt(ctx context.Context, rev, path string, limit int64) ([]byte, error)
+	// RecentAuthors returns who wrote the commits of rev that changed paths
+	// since a date git understands ("6 months ago"), newest first, merges
+	// excluded.
+	RecentAuthors(ctx context.Context, rev, since string, paths []string) ([]CommitAuthor, error)
 	// CommitPatches returns the patch of every commit (a merge: its conflict
 	// resolution) reachable
 	// from HEAD and from none of exclude (all of HEAD's history when exclude
@@ -299,6 +303,13 @@ type CommitRecord struct {
 	CommitterName  string
 	CommitterEmail string
 	Message        string
+}
+
+// CommitAuthor is the author of one commit.
+type CommitAuthor struct {
+	SHA   string
+	Name  string
+	Email string
 }
 
 // FileStat is one line of `git diff --numstat`.

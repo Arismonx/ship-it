@@ -751,6 +751,29 @@ func (c *Client) DiffStatSince(ctx context.Context, base string) ([]ports.FileSt
 	return ParseNumstat(out)
 }
 
+// recentAuthorsPaths bounds the paths given to git log: the command line of
+// Windows holds 32,767 characters.
+const recentAuthorsPaths = 100
+
+// RecentAuthors implements ports.Git. Paths are literal, never patterns.
+func (c *Client) RecentAuthors(ctx context.Context, rev, since string, paths []string) ([]ports.CommitAuthor, error) {
+	if len(paths) > recentAuthorsPaths {
+		paths = paths[:recentAuthorsPaths]
+	}
+	args := append([]string{"--literal-pathspecs", "log", "--no-merges", "--since=" + since, "--format=%H%x1f%an%x1f%ae", rev, "--"}, paths...)
+	out, err := c.Run(ctx, args...)
+	if err != nil {
+		return nil, err
+	}
+	var authors []ports.CommitAuthor
+	for _, line := range strings.Split(string(out), "\n") {
+		if f := strings.Split(strings.TrimSpace(line), "\x1f"); len(f) == 3 {
+			authors = append(authors, ports.CommitAuthor{SHA: f[0], Name: f[1], Email: f[2]})
+		}
+	}
+	return authors, nil
+}
+
 // DiffSince implements ports.Git.
 func (c *Client) DiffSince(ctx context.Context, base string) (string, error) {
 	args := []string{"-c", "core.quotePath=false", "diff", "--no-color", "--no-ext-diff", "--find-renames", "-U0", base + "...HEAD", "--"}

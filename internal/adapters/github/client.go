@@ -249,6 +249,23 @@ func (c *Client) CurrentUser(ctx context.Context, repo forge.Repository) (ports.
 	return user, nil
 }
 
+// CommitAuthorLogin implements ports.Forge (GET /repos/{owner}/{repo}/commits/{sha}):
+// GitHub links the author's email to an account, or answers "author": null.
+func (c *Client) CommitAuthorLogin(ctx context.Context, repo forge.Repository, sha string) (string, error) {
+	var out struct {
+		Author *struct {
+			Login string `json:"login"`
+		} `json:"author"`
+	}
+	if err := c.do(ctx, repo, http.MethodGet, repoPath(repo)+"/commits/"+url.PathEscape(sha), nil, &out); err != nil {
+		return "", err
+	}
+	if out.Author == nil {
+		return "", nil
+	}
+	return out.Author.Login, nil
+}
+
 // ClosePullRequest implements ports.Forge: the comment first, so that the
 // reason is on the pull request before anyone is notified of the closing.
 func (c *Client) ClosePullRequest(ctx context.Context, repo forge.Repository, number int, comment string) error {
