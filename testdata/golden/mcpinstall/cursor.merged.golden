@@ -11,7 +11,9 @@
       "type": "stdio",
       "command": "ship",
       "args": [
-        "mcp"
+        "mcp",
+        "--client",
+        "cursor"
       ]
     }
   }

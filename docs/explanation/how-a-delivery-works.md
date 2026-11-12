@@ -40,7 +40,8 @@ The commit is instant; by default the slower checks run before publishing, so a 
 
 ## On GitHub
 
-12. **Push.** After a rebase, the push uses a lease: it fails rather than overwrite work it has not seen. A fork's branch goes to the fork.
-13. **Pull request.** ship opens the pull request, or updates the one already open. The body is filled from facts: your why, a summary of the diff, the checks that passed, the linked issue; the repository's template is followed ([conventions](../reference/conventions.md)). With `--yes` it is a draft (`ship.pullRequest.draft` changes that), and from an AI agent always. A new pull request also gets the reviewers, assignee and milestone the [settings](../reference/configuration.md#pull-requests-and-github) ask for. In a fork, it opens on the parent.
+12. **Conflicts seen early.** ship reads the open pull requests into the same base and warns (`SHIP-W0619`) when one changes the same or adjacent lines as your branch: whoever merges second will likely get a conflict, so you can talk to its author now. It never stops the push; `ship.publish.overlaps` turns it off.
+13. **Push.** After a rebase, the push uses a lease: it fails rather than overwrite work it has not seen. A fork's branch goes to the fork.
+14. **Pull request.** ship opens the pull request, or updates the one already open. The body is filled from facts: your why, a summary of the diff, the checks that passed, the linked issue; the repository's template is followed ([conventions](../reference/conventions.md)). With `--yes` it is a draft (`ship.pullRequest.draft` changes that), and from an AI agent always. A new pull request also gets the reviewers, assignee and milestone the [settings](../reference/configuration.md#pull-requests-and-github) ask for. In a fork, it opens on the parent.
 
 `ship status` then follows the checks and the reviews and tells you the next step.

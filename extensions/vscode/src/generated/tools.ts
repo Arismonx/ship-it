@@ -76,6 +76,7 @@ export type ShipDoctorResult = {
 
 export type ShipLogResult = {
   operations: ({
+    agent?: string;
     branch?: string;
     deleted?: string[] | null;
     id: string;
@@ -303,6 +304,12 @@ export type ShipStatusResult = {
     key: string;
     params?: Record<string, string> | null;
   };
+  overlaps?: ({
+    files: string[] | null;
+    number: number;
+    title: string;
+    url: string;
+  })[] | null;
   pull_request?: {
     author?: string;
     draft: boolean;

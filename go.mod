@@ -2,7 +2,7 @@ module github.com/GregoireF/ship-it
 
 go 1.27
 
-toolchain go1.27.3
+toolchain go1.27.4
 
 tool (
 	github.com/GregoireF/addlicense/cmd/addlicense

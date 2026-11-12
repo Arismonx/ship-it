@@ -510,6 +510,14 @@ A request to GitHub got no answer (network, proxy, outage).
 
 > GitHub ({host}) does not answer: see https://www.githubstatus.com and your proxy (HTTPS_PROXY).
 
+### SHIP-W0619
+
+An open pull request changes the same or adjacent lines as the branch, a likely conflict for whoever merges second; the publication goes on.
+
+*Warning: ship goes on.*
+
+> Open pull request #{number} ({title}) changes the same lines in {files}: a conflict is likely for whoever merges second. {url}
+
 ## Configuration files
 
 ### SHIP-E0701

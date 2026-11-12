@@ -10,4 +10,4 @@ MY_ENV_VAR = "MY_ENV_VALUE"
 
 [mcp_servers.ship-it]
 command = "ship"
-args = ["mcp"]
+args = ["mcp", "--client", "codex"]

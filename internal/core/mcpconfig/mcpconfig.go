@@ -20,14 +20,20 @@ import (
 // ServerName is the key of ship-it among the servers.
 const ServerName = "ship-it"
 
-// Entry is the stdio launch of ship-it. The command is "ship" from the PATH:
+// entry is the stdio launch of ship-it. The command is "ship" from the PATH:
 // every file written is a project file shared through version control, so it
-// must not hold a path of one machine.
-var Entry = struct {
+// must not hold a path of one machine. --client names the agent, which ship
+// records with each operation it makes (`ship log --agent`, #49).
+type entry struct {
 	Type    string   `json:"type"`
 	Command string   `json:"command"`
 	Args    []string `json:"args"`
-}{Type: "stdio", Command: "ship", Args: []string{"mcp"}}
+}
+
+// Entry is the launch of ship-it for a client.
+func (t Target) Entry() entry {
+	return entry{Type: "stdio", Command: "ship", Args: []string{"mcp", "--client", string(t.Client)}}
+}
 
 // Client names an MCP client ship mcp install knows.
 type Client string
@@ -110,7 +116,7 @@ var ErrManualEdit = errors.New("mcpconfig: the file must be edited by hand")
 // for a new one, the part to add by hand otherwise.
 func (t Target) Snippet() []byte {
 	if t.Format == TOML {
-		return []byte(tomlTable)
+		return []byte(tomlTableFor(t.Client))
 	}
 	out, _ := t.Add(nil)
 	return out.Content
@@ -120,9 +126,9 @@ func (t Target) Snippet() []byte {
 // be empty (no file yet).
 func (t Target) Add(existing []byte) (Result, error) {
 	if t.Format == TOML {
-		return addTOML(existing)
+		return addTOML(existing, tomlTableFor(t.Client))
 	}
-	return addJSON(existing, t.ServersKey)
+	return addJSON(existing, t.ServersKey, t.Entry())
 }
 
 // AddServer adds ship-it to a Claude Code .mcp.json.
@@ -196,7 +202,7 @@ func (o object) encode(prefix string) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func addJSON(existing []byte, serversKey string) (Result, error) {
+func addJSON(existing []byte, serversKey string, launch entry) (Result, error) {
 	root := object{values: map[string]json.RawMessage{}}
 	if len(bytes.TrimSpace(existing)) > 0 {
 		var err error
@@ -211,7 +217,7 @@ func addJSON(existing []byte, serversKey string) (Result, error) {
 			return Result{}, fmt.Errorf("mcpconfig: %s: %w", serversKey, err)
 		}
 	}
-	entry, _ := json.Marshal(Entry)
+	entry, _ := json.Marshal(launch)
 	if current, ok := servers.values[ServerName]; ok {
 		return Result{Content: existing, Kept: !sameJSON(current, entry)}, nil
 	}

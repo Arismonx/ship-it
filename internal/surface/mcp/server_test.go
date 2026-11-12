@@ -285,3 +285,32 @@ func TestAgentWorkspace(t *testing.T) {
 		t.Error("an attended server is driven by a human")
 	}
 }
+
+// TestOperationsRecordTheAgent: #49. An operation made through the server
+// records the agent: --client first, else the name of the initialize
+// handshake; a human in the extension (attended) records none.
+func TestOperationsRecordTheAgent(t *testing.T) {
+	deliver := modern(2, "tools/call", `"name":"ship_deliver","arguments":{}`) + "\n"
+	for _, tt := range []struct {
+		name     string
+		client   string
+		attended bool
+		in, want string
+	}{
+		{"--client", "codex", false, deliver, "codex"},
+		{"handshake", "", false, `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"Claude-Code","version":"2"}}}` + "\n" +
+			`{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"ship_deliver","arguments":{}}}` + "\n", "claude-code"},
+		{"no name", "", false, deliver, "unknown"},
+		{"a human", "vscode", true, deliver, ""},
+	} {
+		h := newHarness()
+		srv := &Server{Workspace: h.ws, Client: tt.client, Attended: tt.attended}
+		var out bytes.Buffer
+		if err := srv.Serve(context.Background(), strings.NewReader(tt.in), &out); err != nil || len(h.log.Operations) != 1 {
+			t.Fatalf("%s: %v, %d operations\n%s", tt.name, err, len(h.log.Operations), out.String())
+		}
+		if got := h.log.Operations[0].Agent; got != tt.want {
+			t.Errorf("%s: agent %q, want %q", tt.name, got, tt.want)
+		}
+	}
+}

@@ -6,8 +6,19 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Added
 
+- `ship log --agent [<name>]`: what AI agents did, or one of them. Every operation made through `ship mcp` records the agent, named by `--client` (which `ship mcp install` now writes) or by the agent's handshake (#49).
+- `ship preview`: the pull request `ship publish` would open (title, body, labels, base, warnings), rehearsed by the publication itself, without sending anything (#44).
+- Conflicts seen early: before pushing, `ship publish` warns when an open pull request into the same base changes the same or adjacent lines (`SHIP-W0619`), and `ship status` lists them (`ship.publish.overlaps`, on by default) (#40).
 - The pull request body sums up the diff: the files added, changed, renamed and removed, and the declarations added and removed (`ship.pullRequest.sections.changes`, on by default) (#32).
 - `ship roadmap sync` keeps what people write in an issue below its `Tracked in ROADMAP.md` line: the file owns the title and the summary, the issue can hold the details for contributors.
+
+### Fixed
+
+- `ship version` prints the version alone when `go install` built it, instead of `(none, unknown)` (#107, thanks @painbaba).
+
+### Security
+
+- Built with Go 1.27.4, which fixes GO-2026-6859 in `net/http`. The flaw is an HTTP/1 server crash and ship runs no server, but `govulncheck` finds the affected functions on its call paths, so the release is rebuilt with the fixed standard library.
 
 ## [0.1.1] - 2026-11-07
 

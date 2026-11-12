@@ -1,3 +1,3 @@
 [mcp_servers.ship-it]
 command = "ship"
-args = ["mcp"]
+args = ["mcp", "--client", "codex"]

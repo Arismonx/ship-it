@@ -57,6 +57,9 @@ var dryRunProperty = map[string]any{"type": "boolean",
 func (s *Server) workspace(dryRun bool) app.Workspace {
 	ws := s.Workspace
 	ws.Agent = !s.Attended
+	if ws.Agent {
+		ws = app.WithAgent(ws, s.agentName())
+	}
 	if dryRun {
 		return app.DryRun(ws)
 	}

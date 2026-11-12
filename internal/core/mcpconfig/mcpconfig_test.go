@@ -19,7 +19,9 @@ const shipEntry = `"ship-it": {
       "type": "stdio",
       "command": "ship",
       "args": [
-        "mcp"
+        "mcp",
+        "--client",
+        "claude"
       ]
     }`
 

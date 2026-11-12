@@ -21,6 +21,7 @@ var helpArgs = map[string][]string{
 	"checkpoint restore": {"checkpoint", "restore", "--help"},
 	"status":             {"status", "--help"},
 	"publish":            {"publish", "--help"},
+	"preview":            {"preview", "--help"},
 	"undo":               {"undo", "--help"},
 	"gc":                 {"gc", "--help"},
 	"plan":               {"plan", "--help"},

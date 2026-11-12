@@ -124,7 +124,7 @@ ship stack status [--offline] [--json]
 After a lower layer merged: fetches, removes the merged layers (local and remote branches), rebases the others on the layer below that stays, and retargets the pull requests of a chain.
 
 ```text
-ship stack sync [--dry-run] [--json]
+ship stack sync [--yes] [--dry-run] [--json]
 ```
 
 The working tree must be clean (`SHIP-E1014`). With `ship.stack.rebase` set to `github` (the default), ship follows the rebase GitHub does, which creates signed replacement commits, and leaves alone a layer with commits never pushed (`SHIP-W1010`). With `local`, the layers are rebased here and pushed with a lease, your own signatures kept. `ship undo` puts the branches back; on GitHub it does so only where nobody pushed since (`SHIP-W1015`).
@@ -184,11 +184,13 @@ ship saves a checkpoint before undoing. It refuses when the repository moved sin
 
 ### `ship log`
 
-Lists what ship did, newest first. `↶` marks what `ship undo` reverts next; undone operations are flagged.
+Lists what ship did, newest first. `↶` marks what `ship undo` reverts next; undone operations are flagged, and so is what an AI agent did through MCP, with its name.
 
 ```text
-ship log [-n N] [--json]
+ship log [-n N] [--agent [<name>]] [--json]
 ```
+
+`--agent` keeps only what agents did; `--agent claude` (or `--agent=claude`) what one agent did. The name is the one `ship mcp install` gave the server with `--client`, or the one the agent gives itself when it connects.
 
 `-n N` sets how many operations to show (20 by default).
 
@@ -226,9 +228,18 @@ Without an argument, the last run. `--list` lists the runs kept. See [logs](logs
 
 ## Status and repairs
 
+### `ship preview`
+
+Shows the pull request `ship publish` would open, as reviewers will read it: the title, the body as the repository's template renders it, the labels, the base, and what the publication would warn about. It rehearses the publication itself, so the preview is what you would get; nothing is pushed or opened, and GitHub is only read. When the branch already has an open pull request, it says so: publishing would push to it and keep its title and body.
+
+```text
+ship preview [--draft] [--issue N] [--json]
+```
+
+It previews committed work: run `ship --local` first, or `ship --dry-run` for uncommitted changes.
 ### `ship status`
 
-Shows where you stand and the one next thing to do: branch, ahead and behind the default branch, files not shipped, the remote branch, the open pull request with its checks and reviews, and what `ship undo` would revert.
+Shows where you stand and the one next thing to do: branch, ahead and behind the default branch, files not shipped, the remote branch, the open pull request with its checks and reviews, the open pull requests that change the same lines as your branch (`ship.publish.overlaps`), and what `ship undo` would revert.
 
 ```text
 ship status [--offline] [--json]
@@ -400,7 +411,7 @@ ship types [--json]
 
 ### `ship mcp`
 
-Starts the MCP server on stdin and stdout, for AI agents. It offers 11 tools; see [use ship-it with AI coding agents](../how-to/use-with-ai-agents.md).
+Starts the MCP server on stdin and stdout, for AI agents. It offers 11 tools; see [use ship-it with AI coding agents](../how-to/use-with-ai-agents.md). `--client <name>` names the agent, which every operation made through the server records (`ship log --agent`); `ship mcp install` writes it in the agent's project file. Without it, the server uses the name the agent gives in its handshake.
 
 ```text
 ship mcp [--attended]
@@ -577,7 +588,7 @@ These commands and features do not exist yet; see the [roadmap](../../ROADMAP.md
 
 - Automatic atomic commits: split the work into several commits by intent (0.2).
 - `ship watch` and `ship rewind`: checkpoints taken as files change, and a way back to any of them.
-- `ship preview`, `ship explain <code>`, `ship bug`, `ship skill install`, `ship uninstall` and `ship log --agent` (see the [roadmap](../../ROADMAP.md) for 0.2).
+- `ship explain <code>`, `ship bug`, `ship skill install`, `ship uninstall` and `ship log --agent` (see the [roadmap](../../ROADMAP.md) for 0.2).
 - `ship release`: compute the version, write the changelog, create the tag and the GitHub release.
 - `ship login` and `ship logout`: sign in with the GitHub device flow and keep the token in the system keychain.
 - `ship rewind`: go back to any moment of your files, from checkpoints taken while you work (0.2; today, `ship checkpoint restore <id>`).

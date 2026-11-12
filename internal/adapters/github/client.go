@@ -179,6 +179,50 @@ func (c *Client) MergedPullRequests(ctx context.Context, repo forge.Repository, 
 	return merged, nil
 }
 
+// OpenPullRequestPatches implements ports.Forge: GET /pulls?state=open&base=…
+// (newest first), then the files of each with their patch. GitHub leaves the
+// patch out of a binary or a very large file; the caller treats such a file
+// as changed as a whole.
+func (c *Client) OpenPullRequestPatches(ctx context.Context, repo forge.Repository, base string, limit int) ([]ports.PullRequestPatches, error) {
+	query := url.Values{"state": {"open"}, "sort": {"created"}, "direction": {"desc"}, "per_page": {strconv.Itoa(min(max(limit, 1), 100))}}
+	if base != "" {
+		query.Set("base", base)
+	}
+	var out []struct {
+		pullRequestJSON
+		Title string `json:"title"`
+	}
+	if err := c.do(ctx, repo, http.MethodGet, repoPath(repo)+"/pulls?"+query.Encode(), nil, &out); err != nil {
+		return nil, err
+	}
+	if len(out) > limit {
+		out = out[:limit]
+	}
+	open := make([]ports.PullRequestPatches, 0, len(out))
+	for _, p := range out {
+		pr := ports.PullRequestPatches{PullRequest: p.port(), Head: p.Head.Ref, Title: p.Title}
+		next := fmt.Sprintf("%s/pulls/%d/files?per_page=100", repoPath(repo), p.Number)
+		for page := 0; next != "" && page < maxFilePages; page++ {
+			var files []struct {
+				Filename         string `json:"filename"`
+				PreviousFilename string `json:"previous_filename"`
+				Status           string `json:"status"`
+				Patch            string `json:"patch"`
+			}
+			header, err := c.doWithHeader(ctx, repo, http.MethodGet, next, nil, &files)
+			if err != nil {
+				return nil, err
+			}
+			for _, f := range files {
+				pr.Files = append(pr.Files, ports.FilePatch{Path: f.Filename, PreviousPath: f.PreviousFilename, Status: f.Status, Patch: f.Patch})
+			}
+			next = nextPage(header.Get("Link"), c.baseURL(repo))
+		}
+		open = append(open, pr)
+	}
+	return open, nil
+}
+
 // CurrentUser implements ports.Forge (GET /user).
 func (c *Client) CurrentUser(ctx context.Context, repo forge.Repository) (ports.User, error) {
 	var out struct {

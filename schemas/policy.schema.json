@@ -345,6 +345,11 @@
                   ],
                   "type": "string"
                 },
+                "overlaps": {
+                  "default": true,
+                  "description": "Before pushing, and in ship status, warn about the open pull requests into the same base that change the same or adjacent lines as the branch: a likely conflict for whoever merges second. It never stops a publication.",
+                  "type": "boolean"
+                },
                 "update": {
                   "default": "rebase",
                   "description": "How a branch behind its base is brought up to date before publishing: \"rebase\" replays it on the base (the push then uses a lease), \"merge\" merges the base into it (no rewrite, a normal push), \"none\" publishes it as it is. A checkpoint comes first; on a conflict ship cancels and publishes as it is.",

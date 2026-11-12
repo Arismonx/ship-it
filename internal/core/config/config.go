@@ -42,6 +42,9 @@ type PublishSettings struct {
 	Mode PublishMode `json:"mode" doc:"Whether ship pushes and opens the pull request after committing: \"auto\", or \"never\" (as --local; ship publish publishes later)." enum:"auto,never"`
 	// Update is how a branch behind its base is brought up to date.
 	Update string `json:"update" enum:"rebase,merge,none" doc:"How a branch behind its base is brought up to date before publishing: \"rebase\" replays it on the base (the push then uses a lease), \"merge\" merges the base into it (no rewrite, a normal push), \"none\" publishes it as it is. A checkpoint comes first; on a conflict ship cancels and publishes as it is."`
+	// Overlaps turns on the warning about open pull requests that change the
+	// same lines (#42).
+	Overlaps bool `json:"overlaps" doc:"Before pushing, and in ship status, warn about the open pull requests into the same base that change the same or adjacent lines as the branch: a likely conflict for whoever merges second. It never stops a publication."`
 }
 
 // Values of ship.publish.update.
@@ -341,7 +344,7 @@ type LabelsSettings struct {
 func Defaults() Settings {
 	return Settings{
 		Ship: ShipSettings{
-			Publish: PublishSettings{Mode: PublishAuto, Update: UpdateRebase},
+			Publish: PublishSettings{Mode: PublishAuto, Update: UpdateRebase, Overlaps: true},
 			Git:     GitSettings{Remote: DefaultRemote},
 			Commits: CommitsSettings{Gitmoji: "auto", SubjectMaxLength: convention.DefaultSubjectMaxLength,
 				HeaderMaxLength: convention.DefaultHeaderMaxLength, BodyWidth: convention.DefaultBodyWidth,

@@ -650,6 +650,8 @@ type FakeForge struct {
 	Latest map[string]ports.PullRequest
 	// Merged are recently merged pull requests.
 	Merged []ports.PullRequest
+	// OpenPatches are the open pull requests OpenPullRequestPatches returns.
+	OpenPatches []ports.PullRequestPatches
 	// Closed records ClosePullRequest.
 	Closed []int
 	// User is the token's account; empty means no token.
@@ -791,6 +793,11 @@ func (f *FakeForge) LatestPullRequest(_ context.Context, _ forge.Repository, bra
 }
 
 // MergedPullRequests implements ports.Forge.
+// OpenPullRequestPatches implements ports.Forge with OpenPatches.
+func (f *FakeForge) OpenPullRequestPatches(context.Context, forge.Repository, string, int) ([]ports.PullRequestPatches, error) {
+	return f.OpenPatches, f.Err
+}
+
 func (f *FakeForge) MergedPullRequests(context.Context, forge.Repository, int) ([]ports.PullRequest, error) {
 	return f.Merged, f.Err
 }

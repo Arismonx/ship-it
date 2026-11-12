@@ -331,10 +331,13 @@ func (r runner) stackStatus(args []string) int {
 
 func (r runner) stackSync(args []string) int {
 	fs, asJSON := r.flags("stack sync")
+	yes := fs.Bool("yes", false, "accept without asking (no prompt today)")
+	fs.BoolVar(yes, "y", false, "shorthand for --yes")
 	dryRun := dryRunFlag(fs)
 	if code, ok := r.parse(fs, args); !ok {
 		return code
 	}
+	_ = yes
 	r = r.rehearse(*dryRun)
 	result, err := app.SyncStack(r.ctx, r.deps)
 	if err != nil {
