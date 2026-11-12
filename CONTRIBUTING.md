@@ -69,7 +69,7 @@ The release configuration: `go run github.com/goreleaser/goreleaser/v2@v2.19.0 c
 - Tick exactly one box of the "Authorship" section: the `authorship` check fails until you do, and passes as soon as you edit the description.
 - Say which AI tools you used, if any, in the "AI usage" section. You must be able to explain every line you submit.
 - AI assistance is welcome, but the person who opens a pull request is its author: read and run the changes yourself before you push, and answer the review in your own words. A pull request that no human has read or run is not ready for review yet.
-- CI must be green on Windows, macOS and Linux.
+- CI must be green. It runs on the systems your change needs: Linux always, Windows for Go code, macOS for code that talks to the system (`go run ./tools/changes -base origin/main` tells which).
 - Every change to `main` goes through a pull request, squash-merged, the maintainer's own included: the branch rules allow no direct push and no bypass.
 - Labels sort the work: `kind/` (what it is), `area/` (the part of ship-it), `priority/`, `size/` (set by a workflow from the diff) and `triage/`. You do not need to set them; a maintainer does.
 - Review comments may use [Conventional Comments](https://conventionalcomments.org/) (`suggestion (non-blocking): …`), which `ship` will sort by whether they block.

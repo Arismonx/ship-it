@@ -3,6 +3,13 @@
 #
 # Quality gate of every pull request (docs/design/workflows.md §1). The checks
 # themselves live in tools/check, so that a laptop runs exactly the same.
+#
+# Each job runs on the systems the change needs (#146): `changes` sorts the
+# changed files (tools/changes), and the jobs skip with `if:`. GitHub reports
+# a job skipped by a condition as success, while a workflow skipped by a path
+# filter leaves a required check pending, so no `paths:` here. `changes` is a
+# required check itself: if it failed, the jobs that need it would be skipped,
+# and a skipped job reads as a success. A push to main runs everything.
 name: ci
 
 on:
@@ -18,13 +25,38 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check:
-    name: check (${{ matrix.os }})
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+  changes:
+    name: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      go: ${{ steps.sort.outputs.go }}
+      system: ${{ steps.sort.outputs.system }}
+      extension: ${{ steps.sort.outputs.extension }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The merge base with the target branch must be there.
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      # Expressions go through the environment (zizmor: template-injection).
+      - name: sort the changed files
+        id: sort
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+        run: go run ./tools/changes -base "$BASE" >> "$GITHUB_OUTPUT"
+
+  # Linux always: it is the reference, and it checks the docs and the
+  # generated files as well as the code.
+  check-linux:
+    name: check (ubuntu-latest)
+    needs: changes
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       contents: read
@@ -35,20 +67,57 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
-      # The race detector needs cgo, available on the Linux and macOS runners.
-      # Expressions go through the environment, never into the script itself
-      # (zizmor: template-injection); bash reads them the same way on every OS.
+      - name: check
+        run: go run ./tools/check -fuzztime=10s -race=true
+
+  # Windows when Go changes: paths, line endings and processes differ there.
+  # The race detector needs cgo, which the Windows runner lacks.
+  check-windows:
+    name: check (windows-latest)
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
       - name: check
         shell: bash
-        env:
-          RACE: ${{ runner.os != 'Windows' }}
-        run: go run ./tools/check -fuzztime=10s -race="$RACE"
+        run: go run ./tools/check -fuzztime=10s -race=false
+
+  # macOS when the code that talks to the system changes: the free plan runs
+  # five macOS jobs at once for the whole account, so they queue.
+  check-macos:
+    name: check (macos-latest)
+    needs: changes
+    if: needs.changes.outputs.system == 'true'
+    runs-on: macos-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: check
+        run: go run ./tools/check -fuzztime=10s -race=true
 
   # Performance budgets (docs/design/performance.md), on one OS: the git
   # processes per command are the same everywhere, and blocking on them never
   # flakes; time ceilings keep a wide headroom for shared runners.
   bench:
     name: bench (ubuntu-latest)
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -69,7 +138,8 @@ jobs:
   # a Codecov outage never fails the pull request.
   coverage:
     name: coverage
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    needs: changes
+    if: needs.changes.outputs.go == 'true' && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -90,8 +160,11 @@ jobs:
           files: coverage.out
           use_oidc: true
           fail_ci_if_error: false
+
   extension:
     name: extension (${{ matrix.os }})
+    needs: changes
+    if: needs.changes.outputs.extension == 'true'
     strategy:
       fail-fast: false
       matrix:

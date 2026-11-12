@@ -10,7 +10,15 @@
 name: codeql
 
 on:
+  # Not a required check, so a path filter is safe here (#146): a pull
+  # request is analysed when it changes code of one of the three languages.
   pull_request:
+    paths:
+      - "**.go"
+      - "go.mod"
+      - "go.sum"
+      - "extensions/**"
+      - ".github/workflows/**"
   push:
     branches: [main]
   schedule:
