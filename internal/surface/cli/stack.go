@@ -251,6 +251,8 @@ func (r runner) printWarnings(warnings []app.ProblemView) {
 
 func (r runner) stackPublish(args []string) int {
 	fs, asJSON := r.flags("stack publish")
+	yes := fs.Bool("yes", false, "accept without asking")
+	fs.BoolVar(yes, "y", false, "shorthand for --yes")
 	issue := fs.Int("issue", 0, "linked issue number: closed by the bottom layer, referred to by the others")
 	draft := fs.Bool("draft", false, "open the pull requests as drafts")
 	skipGates := fs.Bool("skip-gates", false, "push without running lint and tests (said in the pull requests)")
@@ -258,6 +260,7 @@ func (r runner) stackPublish(args []string) int {
 	if code, ok := r.parse(fs, args); !ok {
 		return code
 	}
+	_ = yes
 	r = r.rehearse(*dryRun)
 	result, err := app.PublishStack(r.ctx, r.deps, app.StackPublishRequest{Issue: *issue, ForceDraft: *draft, SkipGates: *skipGates, GateObserver: r.gateProgress(*asJSON)})
 	if err != nil {
