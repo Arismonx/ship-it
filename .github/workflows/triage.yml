@@ -95,6 +95,60 @@ jobs:
             fi
           done
 
+  # /take on an issue assigns it to whoever asks, /release gives it back
+  # (#149), so that two people never do the same work. Hourly, with no
+  # issue_comment trigger: comments are read from the API, never run. A
+  # handled comment gets a 🚀 reaction from this job, so it is handled once.
+  claim:
+    name: claim issues
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write # assign, comment and react on issues
+    steps:
+      - name: /take and /release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          CONTRIBUTING: ${{ github.server_url }}/${{ github.repository }}/blob/HEAD/CONTRIBUTING.md
+          FREE: ${{ github.server_url }}/${{ github.repository }}/issues?q=is%3Aopen+label%3A%22good+first+issue%22+no%3Aassignee
+        run: |
+          set -uo pipefail
+          since="$(date -u -d '-3 hours' +%Y-%m-%dT%H:%M:%SZ)"
+          gh api --paginate "repos/$GH_REPO/issues/comments?since=$since&per_page=100" \
+            --jq '.[] | select(.body | test("^\\s*/(take|release)\\b")) | [.id, (.issue_url | split("/") | last), .user.login, (.body | capture("^\\s*/(?<c>take|release)").c)] | @tsv' |
+          while IFS=$'\t' read -r id issue who command; do
+            if gh api "repos/$GH_REPO/issues/comments/$id/reactions" --jq '.[].user.login' | grep -qx 'github-actions\[bot\]'; then
+              continue # already handled
+            fi
+            read -r state pr assignees < <(gh api "repos/$GH_REPO/issues/$issue" \
+              --jq '"\(.state) \(.pull_request != null) \([.assignees[].login] | join(","))"')
+            if [ "$pr" = true ] || [ "$state" != open ]; then
+              continue # pull requests and closed issues are not claimed
+            fi
+            case "$command" in
+              take)
+                if [ -z "$assignees" ]; then
+                  if gh issue edit "$issue" --add-assignee "$who"; then
+                    gh issue comment "$issue" --body "Thank you @$who, this issue is yours! Say here if you have a question, or \`/release\` if you cannot go on. [CONTRIBUTING.md]($CONTRIBUTING) has the conventions."
+                  else
+                    gh issue comment "$issue" --body "@$who, GitHub did not let me assign this issue to you; a maintainer will do it soon."
+                  fi
+                elif [[ ",$assignees," != *",$who,"* ]]; then
+                  gh issue comment "$issue" --body "Thank you @$who! This issue is already taken by @${assignees//,/, @}. The [good first issues]($FREE) without an assignee are free."
+                fi
+                ;;
+              release)
+                if [[ ",$assignees," = *",$who,"* ]]; then
+                  gh issue edit "$issue" --remove-assignee "$who" &&
+                  gh issue comment "$issue" --body "Thank you @$who for letting us know: this issue is free again."
+                fi
+                ;;
+            esac
+            gh api -X POST "repos/$GH_REPO/issues/comments/$id/reactions" -f content=rocket > /dev/null
+          done
+
   welcome:
     name: welcome first-time contributors
     if: github.event_name != 'pull_request'

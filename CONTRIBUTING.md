@@ -9,7 +9,7 @@ The [roadmap board](https://github.com/users/GregoireF/projects/1) shows every p
 
 - [Good first issues](https://github.com/GregoireF/ship-it/issues?q=is%3Aopen+label%3A%22good+first+issue%22) are small and self-contained: each names the files to change and how to test it.
 - [Help wanted](https://github.com/GregoireF/ship-it/issues?q=is%3Aopen+label%3A%22help+wanted%22) are larger pieces where a hand is welcome.
-- Say in the issue that you are taking it, so that two people do not do the same work. Ask there if anything is unclear.
+- Comment `/take` on an issue nobody is assigned to: within the hour it is assigned to you, so that two people do not do the same work. `/release` gives it back. Ask there if anything is unclear.
 - An idea that is not on the board yet goes to [Discussions › Ideas](https://github.com/GregoireF/ship-it/discussions/categories/ideas) first.
 
 ## Before you start
