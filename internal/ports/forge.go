@@ -108,12 +108,32 @@ type Forge interface {
 	// PullRequestContent returns a pull request with the messages of its
 	// commits (the API lists up to 250) and its changed files (up to 3,000).
 	PullRequestContent(ctx context.Context, repo forge.Repository, number int) (PullRequestContent, error)
+	// OpenPullRequestPatches returns the open pull requests into base, up to
+	// limit, newest first, with the patch of each file they change.
+	OpenPullRequestPatches(ctx context.Context, repo forge.Repository, base string, limit int) ([]PullRequestPatches, error)
 	// CheckRuns returns the latest check run of each check of a commit.
 	CheckRuns(ctx context.Context, repo forge.Repository, commit string) ([]review.CheckRun, error)
 	// CommitStatuses returns the latest status of each context of a commit.
 	CommitStatuses(ctx context.Context, repo forge.Repository, commit string) ([]review.CommitStatus, error)
 	// Reviews returns the submitted reviews of a pull request, oldest first.
 	Reviews(ctx context.Context, repo forge.Repository, number int) ([]review.Review, error)
+}
+
+// PullRequestPatches is an open pull request and the patch of each file it
+// changes, to find the lines it shares with another change.
+type PullRequestPatches struct {
+	PullRequest PullRequest
+	// Head is the branch the pull request comes from.
+	Head  string
+	Title string
+	Files []FilePatch
+}
+
+// FilePatch is one file of a pull request as GitHub lists it: Status is
+// "added", "removed", "modified", "renamed"…; Patch is empty when GitHub
+// leaves it out (a binary or a very large file).
+type FilePatch struct {
+	Path, PreviousPath, Status, Patch string
 }
 
 // PullRequestContent is what a pull request brings, as GitHub sees it.

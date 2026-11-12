@@ -733,6 +733,10 @@ func (d *dryForge) FileContent(ctx context.Context, repo forge.Repository, path,
 func (d *dryForge) BranchRules(ctx context.Context, repo forge.Repository, branch string) ([]rules.Rule, error) {
 	return d.forge.BranchRules(ctx, repo, branch)
 }
+func (d *dryForge) OpenPullRequestPatches(ctx context.Context, repo forge.Repository, base string, limit int) ([]ports.PullRequestPatches, error) {
+	return d.forge.OpenPullRequestPatches(ctx, repo, base, limit)
+}
+
 func (d *dryForge) PullRequestContent(ctx context.Context, repo forge.Repository, number int) (ports.PullRequestContent, error) {
 	return d.forge.PullRequestContent(ctx, repo, number)
 }
