@@ -86,7 +86,7 @@ ship publish [--draft] [--issue N] [--skip-gates] [--dry-run] [--json]
 | `--issue N` | The linked issue. By default it is read from the branch name: `feat/42-add-login` closes `#42`. |
 | `--skip-gates` | Push without running the gates. The pull request says so. |
 
-Before the push, ship rebases on the base when it moved, checks the branch and commits against the repository's rulesets, and runs the gates. The pull request gets the `kind/` and `size/` labels the repository has. The URL of the pull request is the last line of stdout.
+Before the push, ship rebases on the base when it moved, checks the branch and commits against the repository's rulesets, and runs the gates. The pull request gets the `kind/`, `area/` (from the commit scope) and `size/` labels the repository has. The URL of the pull request is the last line of stdout.
 
 ### `ship stack`
 
@@ -350,7 +350,7 @@ ship roadmap sync [--file <path>] [--yes] [--dry-run] [--json]
 
 ### `ship label`
 
-Puts on pull request N the `kind/` and `size/` labels ship would have set, computed from its commits and files as GitHub lists them (up to 250 commits and 3,000 files). It is meant for pull requests not opened with ship, from forks included, for example in a workflow.
+Puts on pull request N the `kind/`, `area/` and `size/` labels ship would have set, computed from its commits and files as GitHub lists them (up to 250 commits and 3,000 files). It is meant for pull requests not opened with ship, from forks included, for example in a workflow.
 
 ```text
 ship label --pr N [--dry-run] [--json]

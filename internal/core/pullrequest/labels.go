@@ -13,6 +13,9 @@ import (
 // Default label prefixes (docs/design/git-github-standards.md §5).
 const (
 	DefaultKindPrefix = "kind/"
+	// AreaPrefix starts the labels of a part of the project, named after the
+	// commit scopes (github.labels.areas).
+	AreaPrefix        = "area/"
 	DefaultSizePrefix = "size/"
 )
 
@@ -193,6 +196,15 @@ func (t Taxonomy) Labels(rules convention.Rules, commits []convention.Header, ch
 		}
 		if c.Breaking {
 			addKind("breaking")
+		}
+	}
+	// The commit scope names the part of the project: area/<scope> when the
+	// repository has that label (#127). "cli, mcp" names two.
+	for _, c := range commits {
+		for _, scope := range strings.Split(c.Scope, ",") {
+			if scope = strings.ToLower(strings.TrimSpace(scope)); scope != "" {
+				add(AreaPrefix + scope)
+			}
 		}
 	}
 	add(t.SizeLabel(changedLines))

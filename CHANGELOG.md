@@ -8,6 +8,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 - `ship log --agent [<name>]`: what AI agents did, or one of them. Every operation made through `ship mcp` records the agent, named by `--client` (which `ship mcp install` now writes) or by the agent's handshake (#49).
 - `ship preview` ends with a review risk (low, medium, high) and the facts behind it: the size, source changed without tests, sensitive paths (`ship.pullRequest.sensitivePaths`), removals (#45).
+- Pull requests get an `area/<scope>` label from their commit scope when the repository has it (`✨ feat(cli): …` gets `area/cli`), in `ship publish` and `ship label` (#127).
 - `ship preview`: the pull request `ship publish` would open (title, body, labels, base, warnings), rehearsed by the publication itself, without sending anything (#44).
 - Conflicts seen early: before pushing, `ship publish` warns when an open pull request into the same base changes the same or adjacent lines (`SHIP-W0619`), and `ship status` lists them (`ship.publish.overlaps`, on by default) (#40).
 - The pull request body sums up the diff: the files added, changed, renamed and removed, and the declarations added and removed (`ship.pullRequest.sections.changes`, on by default) (#32).

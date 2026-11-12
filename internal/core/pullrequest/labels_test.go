@@ -50,6 +50,8 @@ func TestLabels(t *testing.T) {
 	}{
 		{"ship-it taxonomy", kubernetes, []string{"kind/feature", "kind/breaking", "kind/bug", "size/M"}},
 		{"GitHub defaults", defaults, []string{"enhancement", "bug"}},
+		// feat(api) names the area: area/api when the repository has it (#127).
+		{"with areas", append([]string{"area/api", "area/cli"}, kubernetes...), []string{"kind/feature", "kind/breaking", "kind/bug", "area/api", "size/M"}},
 		{"no labels at all", nil, nil},
 	}
 	for _, tt := range tests {
@@ -76,5 +78,16 @@ func TestLabelsFollowTheTypeTable(t *testing.T) {
 	}
 	if got := KindLabel(convention.Rules{}, convention.Feature, []string{"enhancement"}); got != "enhancement" {
 		t.Errorf("built-in KindLabel = %q", got)
+	}
+}
+
+// TestAreaLabelsFromScopes: the commit scope names the part of the project
+// (#127): several scopes, any case, only labels the repository has.
+func TestAreaLabelsFromScopes(t *testing.T) {
+	commits := []convention.Header{header(t, "feat(CLI, mcp): add explain"), header(t, "fix(docs): typo"), header(t, "fix(unknown): x")}
+	existing := []string{"area/cli", "area/mcp", "area/docs"}
+	want := []string{"area/cli", "area/mcp", "area/docs"}
+	if got := Labels(convention.Rules{}, commits, 3, existing); !reflect.DeepEqual(got, want) {
+		t.Fatalf("Labels = %v, want %v", got, want)
 	}
 }
