@@ -124,7 +124,7 @@ ship stack status [--offline] [--json]
 After a lower layer merged: fetches, removes the merged layers (local and remote branches), rebases the others on the layer below that stays, and retargets the pull requests of a chain.
 
 ```text
-ship stack sync [--dry-run] [--json]
+ship stack sync [--yes] [--dry-run] [--json]
 ```
 
 The working tree must be clean (`SHIP-E1014`). With `ship.stack.rebase` set to `github` (the default), ship follows the rebase GitHub does, which creates signed replacement commits, and leaves alone a layer with commits never pushed (`SHIP-W1010`). With `local`, the layers are rebased here and pushed with a lease, your own signatures kept. `ship undo` puts the branches back; on GitHub it does so only where nobody pushed since (`SHIP-W1015`).
