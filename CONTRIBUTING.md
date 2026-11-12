@@ -66,6 +66,7 @@ The release configuration: `go run github.com/goreleaser/goreleaser/v2@v2.19.0 c
 ## Pull requests
 - The [pull request template](.github/pull_request_template.md) asks how **you** tested the change: report what you did and saw, not CI output. `ship` fills the summary, the issue and the AI usage section; you answer the rest.
 - A change users will see gets a changelog entry: a small file in [changelog.d/](changelog.d/README.md), never an edit of CHANGELOG.md, so that pull requests do not conflict.
+- Tick exactly one box of the "Authorship" section: the `authorship` check fails until you do, and passes as soon as you edit the description.
 - Say which AI tools you used, if any, in the "AI usage" section. You must be able to explain every line you submit.
 - AI assistance is welcome, but the person who opens a pull request is its author: read and run the changes yourself before you push, and answer the review in your own words. A pull request that no human has read or run is not ready for review yet.
 - CI must be green on Windows, macOS and Linux.

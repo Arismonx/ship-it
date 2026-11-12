@@ -40,3 +40,26 @@ jobs:
         with:
           title: ${{ github.event.pull_request.title }}
           version: source
+
+  # The pull request says how it was written: exactly one box of the
+  # template's "Authorship" section (#147). Agents are welcome; this makes
+  # their part visible. The body is untrusted: it goes through the
+  # environment, never into the script.
+  authorship:
+    name: authorship
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: check authorship
+        env:
+          BODY: ${{ github.event.pull_request.body }}
+        run: go run ./tools/authorship
