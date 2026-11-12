@@ -73,6 +73,27 @@ jobs:
             "$RUNNER_TEMP/ship" label --pr "$n" || status=1
           done
           exit "$status"
+      # The author moves the work forward: they are its default assignee
+      # (#128). Only a pull request nobody is assigned to yet; GitHub ignores a
+      # login it cannot assign, and that is not a failure of the run.
+      - name: assign the author
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -uo pipefail
+          if [ -n "$PR" ]; then
+            numbers="$PR"
+          else
+            numbers="$(gh pr list --state open --limit 100 --json number --jq '.[].number')"
+          fi
+          for n in $numbers; do
+            read -r author assigned < <(gh pr view "$n" --json author,assignees --jq '"\(.author.login) \(.assignees | length)"')
+            if [ "$assigned" = 0 ] && [ -n "$author" ]; then
+              gh pr edit "$n" --add-assignee "$author" || echo "::notice::could not assign $author to #$n"
+            fi
+          done
 
   welcome:
     name: welcome first-time contributors
