@@ -50,3 +50,41 @@ func TestOpenOverlaps(t *testing.T) {
 		t.Fatalf("only new files: %v, %v", got, err)
 	}
 }
+
+// TestPublishAndStatusTellAboutOverlaps: #42. publish warns before the push
+// (and pushes all the same), status lists the overlapping pull requests, and
+// ship.publish.overlaps off silences both.
+func TestPublishAndStatusTellAboutOverlaps(t *testing.T) {
+	overlapping := []ports.PullRequestPatches{{
+		PullRequest: ports.PullRequest{Number: 8, URL: "https://github.com/acme/shop/pull/8"}, Head: "feat/rates", Title: "New rates",
+		Files: []ports.FilePatch{{Path: "billing/vat.go", Status: "modified", Patch: "@@ -10,2 +10,2 @@"}},
+	}}
+	diff := "diff --git a/billing/vat.go b/billing/vat.go\n--- a/billing/vat.go\n+++ b/billing/vat.go\n@@ -11 +11 @@\n-a\n+b\n"
+
+	var calls []string
+	git := publishableGit(&calls)
+	git.BranchDiff = diff
+	forge := &testkit.FakeForge{OpenPatches: overlapping}
+	ws, _ := publishWorkspace(git, forge)
+	result, err := Publish(context.Background(), ws, PublishRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(forge.Created) != 1 || len(result.Warnings) != 1 || result.Warnings[0].Code != "SHIP-W0619" || result.Warnings[0].Params["number"] != "8" {
+		t.Fatalf("published %d, warnings %+v: want the pull request opened and one SHIP-W0619 about #8", len(forge.Created), result.Warnings)
+	}
+
+	sgit := featureBranchGit()
+	sgit.BranchDiff = diff
+	ws, _, _ = workspaceOf(sgit)
+	ws.Forge = &testkit.FakeForge{OpenPatches: overlapping}
+	view, err := Status(context.Background(), ws, StatusRequest{})
+	if err != nil || len(view.Overlaps) != 1 || view.Overlaps[0].Number != 8 {
+		t.Fatalf("status overlaps = %+v, %v", view.Overlaps, err)
+	}
+
+	ws.Config = &testkit.FakeConfigFiles{Repository: `{"ship": {"publish": {"overlaps": false}}}`}
+	if view, _ := Status(context.Background(), ws, StatusRequest{}); len(view.Overlaps) != 0 {
+		t.Fatalf("ship.publish.overlaps false: status still lists %+v", view.Overlaps)
+	}
+}

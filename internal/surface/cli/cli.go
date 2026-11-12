@@ -570,7 +570,7 @@ func (r runner) statusCommand(args []string) int {
 	t := func(key string, params map[string]string) string { return i18n.Render(r.lang, key, params) }
 	// Labels are aligned on the longest one in the current language.
 	width := 0
-	for _, label := range []string{"changes", "upstream", "pull_request", "checks", "review", "undo"} {
+	for _, label := range []string{"changes", "upstream", "pull_request", "checks", "review", "overlap", "undo"} {
 		width = max(width, utf8.RuneCountInString(t("cli.status.label."+label, nil)))
 	}
 	line := func(label, value string) {
@@ -624,6 +624,9 @@ func (r runner) statusCommand(args []string) int {
 	if rv := view.Review; rv != nil && rv.Decision != "none" {
 		line("review", t("cli.status.review."+string(rv.Decision), map[string]string{
 			"approvers": strings.Join(rv.Approvers, ", "), "requesters": strings.Join(rv.Requesters, ", ")}))
+	}
+	for _, o := range view.Overlaps {
+		line("overlap", t("cli.status.overlap", map[string]string{"number": n(o.Number), "title": o.Title, "files": strings.Join(o.Files, ", ")}))
 	}
 	if view.Undoable != nil {
 		line("undo", t("cli.status.undoable."+view.Undoable.Kind, map[string]string{"title": view.Undoable.Title}))

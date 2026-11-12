@@ -5,7 +5,10 @@ package app
 
 import (
 	"context"
+	"strconv"
+	"strings"
 
+	"github.com/GregoireF/ship-it/internal/core/fault"
 	"github.com/GregoireF/ship-it/internal/core/forge"
 	"github.com/GregoireF/ship-it/internal/core/overlap"
 	"github.com/GregoireF/ship-it/internal/ports"
@@ -50,6 +53,13 @@ func OpenOverlaps(ctx context.Context, ws Workspace, repo forge.Repository, base
 		}
 	}
 	return overlaps, nil
+}
+
+// overlapWarning says which open pull request changes the same lines.
+func overlapWarning(o OverlapView) ProblemView {
+	return ProblemView{Code: string(fault.OverlappingPullRequest), Key: "publish.overlap", Params: map[string]string{
+		"number": strconv.Itoa(o.Number), "title": o.Title, "files": strings.Join(o.Files, ", "), "url": o.URL,
+	}}
 }
 
 // filesOf turns a pull request's files into what it does to the base: a new

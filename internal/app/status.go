@@ -67,6 +67,9 @@ type StatusView struct {
 	// CI and Review describe the open pull request, when GitHub told.
 	CI     *review.CI      `json:"ci,omitempty"`
 	Review *review.Verdict `json:"review,omitempty"`
+	// Overlaps are the open pull requests that change the same or adjacent
+	// lines as the branch (ship.publish.overlaps).
+	Overlaps []OverlapView `json:"overlaps,omitempty"`
 
 	// Undoable is what `ship undo` would revert.
 	Undoable *OperationView `json:"undoable,omitempty"`
@@ -155,6 +158,10 @@ func Status(ctx context.Context, ws Workspace, req StatusRequest) (StatusView, e
 				view.PullRequest = &pr
 				facts.PullRequest = &situation.PullRequest{Number: pr.Number, URL: pr.URL, Draft: pr.Draft}
 				pullRequestState(lookupCtx, ws, prRepo, pr, b.Commit, facts.PullRequest, &view)
+			}
+			// Information only: a failure or a timeout here says nothing.
+			if eff, err := LoadSettings(ctx, ws); err == nil && eff.Settings.Ship.Publish.Overlaps && facts.Base != "" {
+				view.Overlaps, _ = OpenOverlaps(lookupCtx, ws, prRepo, publishRemote+"/"+facts.Base, facts.Base, b.Name)
 			}
 		}
 		cancel()

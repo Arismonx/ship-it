@@ -228,7 +228,7 @@ Without an argument, the last run. `--list` lists the runs kept. See [logs](logs
 
 ### `ship status`
 
-Shows where you stand and the one next thing to do: branch, ahead and behind the default branch, files not shipped, the remote branch, the open pull request with its checks and reviews, and what `ship undo` would revert.
+Shows where you stand and the one next thing to do: branch, ahead and behind the default branch, files not shipped, the remote branch, the open pull request with its checks and reviews, the open pull requests that change the same lines as your branch (`ship.publish.overlaps`), and what `ship undo` would revert.
 
 ```text
 ship status [--offline] [--json]

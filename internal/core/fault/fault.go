@@ -152,6 +152,10 @@ const (
 	// MergeConflict: merging the base into the branch (ship.publish.update
 	// merge) conflicts; the branch is published as it is.
 	MergeConflict Code = "SHIP-W0617"
+	// OverlappingPullRequest: an open pull request changes the same or
+	// adjacent lines as the branch, a likely conflict for whoever merges
+	// second; the publication goes on.
+	OverlappingPullRequest Code = "SHIP-W0619"
 	// GitHubNoAnswer: a request to GitHub got no answer (network, proxy,
 	// outage).
 	GitHubNoAnswer Code = "SHIP-E0618"

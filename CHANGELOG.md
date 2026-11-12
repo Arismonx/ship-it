@@ -6,6 +6,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Added
 
+- Conflicts seen early: before pushing, `ship publish` warns when an open pull request into the same base changes the same or adjacent lines (`SHIP-W0619`), and `ship status` lists them (`ship.publish.overlaps`, on by default) (#40).
 - The pull request body sums up the diff: the files added, changed, renamed and removed, and the declarations added and removed (`ship.pullRequest.sections.changes`, on by default) (#32).
 - `ship roadmap sync` keeps what people write in an issue below its `Tracked in ROADMAP.md` line: the file owns the title and the summary, the issue can hold the details for contributors.
 

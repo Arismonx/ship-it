@@ -115,6 +115,7 @@ func TestFlatten(t *testing.T) {
 	want := []Entry{
 		{"ship.publish.mode", `"auto"`},
 		{"ship.publish.update", `"rebase"`},
+		{"ship.publish.overlaps", "true"},
 		{"ship.git.remote", `"origin"`},
 		{"ship.commits.gitmoji", `"auto"`},
 		{"ship.commits.subjectMaxLength", "50"},
@@ -217,7 +218,7 @@ func FuzzMerge(f *testing.F) {
 			return
 		}
 		if eff.Settings.Ship.Publish.Mode != PublishAuto && eff.Settings.Ship.Publish.Mode != PublishNever {
-			t.Fatalf("invalid publish mode accepted: %q", eff.Settings.Ship.Publish)
+			t.Fatalf("invalid publish mode accepted: %+v", eff.Settings.Ship.Publish)
 		}
 	})
 }

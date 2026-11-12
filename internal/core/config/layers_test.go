@@ -117,7 +117,7 @@ func TestContexts(t *testing.T) {
 		eff := mustMerge(t, tt.target, user)
 		s := eff.Settings.Ship
 		if s.Issues.Keyword != tt.keyword || s.Publish.Mode != tt.publish || s.PullRequest.MaxLines != tt.lines {
-			t.Errorf("%+v: keyword %s, publish %s, maxLines %d", tt.target, s.Issues.Keyword, s.Publish, s.PullRequest.MaxLines)
+			t.Errorf("%+v: keyword %s, publish %+v, maxLines %d", tt.target, s.Issues.Keyword, s.Publish, s.PullRequest.MaxLines)
 		}
 	}
 }

@@ -479,6 +479,16 @@ func publish(ctx context.Context, ws Workspace, req PublishRequest) (PublishResu
 		}
 	}
 
+	if eff.Settings.Ship.Publish.Overlaps {
+		// A help, never a reason to stop: the push goes on whatever GitHub
+		// answers here.
+		if overlaps, err := OpenOverlaps(ctx, ws, target.prRepo, base, target.base, branch.Name); err == nil {
+			for _, o := range overlaps {
+				result.Warnings = append(result.Warnings, overlapWarning(o))
+			}
+		}
+	}
+
 	pushed := ws.begin(ctx, "publish/push")
 	err = ws.Git.Push(ctx, remote, branch.Name, lease)
 	pushed(err, slog.Bool("lease", lease != ""))
