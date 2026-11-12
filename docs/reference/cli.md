@@ -237,6 +237,18 @@ ship preview [--draft] [--issue N] [--json]
 ```
 
 It previews committed work: run `ship --local` first, or `ship --dry-run` for uncommitted changes.
+
+It ends with a review risk, low, medium or high, and the facts behind each point, so a reviewer knows how carefully to read:
+
+| Fact | Points |
+|---|---|
+| 100 changed lines or more (500 or more) | 1 (2) |
+| Source files changed without any test file | 2 |
+| A sensitive path: continuous integration, dependencies, or `ship.pullRequest.sensitivePaths` (migrations, auth, security, SQL, Dockerfile by default) | 2 |
+| Files or declarations removed | 1 |
+
+Generated files and lockfiles do not count as changed lines, as for the `size/` labels. Medium starts at 2 points, high at 4. The score is not added to the pull request.
+
 ### `ship status`
 
 Shows where you stand and the one next thing to do: branch, ahead and behind the default branch, files not shipped, the remote branch, the open pull request with its checks and reviews, the open pull requests that change the same lines as your branch (`ship.publish.overlaps`), and what `ship undo` would revert.

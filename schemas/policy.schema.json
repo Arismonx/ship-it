@@ -459,6 +459,21 @@
                   },
                   "type": "object"
                 },
+                "sensitivePaths": {
+                  "default": [
+                    "**/migrations/**",
+                    "**/auth/**",
+                    "**/security/**",
+                    "**/*.sql",
+                    "**/Dockerfile"
+                  ],
+                  "description": "Paths whose changes ship preview counts as sensitive in its risk score, as glob patterns, on top of continuous integration and dependencies.",
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                },
                 "sizes": {
                   "additionalProperties": {
                     "minimum": 0,

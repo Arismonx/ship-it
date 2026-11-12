@@ -56,7 +56,7 @@ func TestMergeErrors(t *testing.T) {
 	}{
 		{"syntax", "{\n  \"ship\": {\n    \"publish\" \"auto\"\n  }\n}", fault.ConfigInvalidJSON, map[string]string{"line": "3"}},
 		{"unknown key", `{"ship": {"pullRequest": {"approvers": "auto"}}}`, fault.ConfigUnknownKey,
-			map[string]string{"key": "ship.pullRequest.approvers", "known": "ship.pullRequest.draft, ship.pullRequest.base, ship.pullRequest.labels, ship.pullRequest.labelPrefixes, ship.pullRequest.sizes, ship.pullRequest.maxLines, ship.pullRequest.template, ship.pullRequest.sections, ship.pullRequest.reviewers, ship.pullRequest.teamReviewers, ship.pullRequest.assignSelf, ship.pullRequest.milestone"}},
+			map[string]string{"key": "ship.pullRequest.approvers", "known": "ship.pullRequest.draft, ship.pullRequest.base, ship.pullRequest.labels, ship.pullRequest.labelPrefixes, ship.pullRequest.sizes, ship.pullRequest.maxLines, ship.pullRequest.template, ship.pullRequest.sensitivePaths, ship.pullRequest.sections, ship.pullRequest.reviewers, ship.pullRequest.teamReviewers, ship.pullRequest.assignSelf, ship.pullRequest.milestone"}},
 		{"wrong type", `{"ship": {"pullRequest": {"labels": "yes"}}}`, fault.ConfigWrongType, map[string]string{"expected": "true or false"}},
 		{"enum", `{"ship": {"issues": {"keyword": "closes"}}}`, fault.ConfigInvalidValue, map[string]string{"allowed": "Closes, Fixes, Resolves, Refs"}},
 		{"array item", `{"github": {"labels": {"areas": ["api", 3]}}}`, fault.ConfigWrongType, map[string]string{"key": "github.labels.areas"}},
@@ -138,6 +138,7 @@ func TestFlatten(t *testing.T) {
 		{"ship.pullRequest.sizes", `{"XS":10,"S":30,"M":100,"L":500,"XL":1000,"XXL":0}`},
 		{"ship.pullRequest.maxLines", "400"},
 		{"ship.pullRequest.template", `"auto"`},
+		{"ship.pullRequest.sensitivePaths", `["**/migrations/**","**/auth/**","**/security/**","**/*.sql","**/Dockerfile"]`},
 		{"ship.pullRequest.sections.why", "true"},
 		{"ship.pullRequest.sections.testing", "true"},
 		{"ship.pullRequest.sections.issue", "true"},

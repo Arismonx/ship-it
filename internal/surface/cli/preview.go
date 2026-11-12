@@ -50,6 +50,13 @@ func (r runner) preview(args []string) int {
 		fmt.Fprintln(out)
 		fmt.Fprintln(out, strings.TrimRight(view.Body, "\n"))
 	}
+	if view.Risk != nil {
+		fmt.Fprintln(out)
+		fmt.Fprintln(out, t("cli.preview.risk", map[string]string{"level": t("risk.level."+view.Risk.Level, nil), "points": fmt.Sprint(view.Risk.Points)}))
+		for _, f := range view.Risk.Factors {
+			fmt.Fprintln(out, t("cli.preview.risk_factor", map[string]string{"points": fmt.Sprint(f.Points), "reason": t(f.Key, f.Params)}))
+		}
+	}
 	for _, w := range view.Warnings {
 		r.status("  ⚠ " + w.Code + "  " + t(w.Key, w.Params))
 	}

@@ -17,6 +17,7 @@ import (
 
 	"github.com/GregoireF/ship-it/internal/core/convention"
 	"github.com/GregoireF/ship-it/internal/core/pullrequest"
+	"github.com/GregoireF/ship-it/internal/core/risk"
 )
 
 // CurrentVersion is the version of the file format (decision N9).
@@ -252,12 +253,13 @@ type PullRequestSettings struct {
 	Sizes         Sizes         `json:"sizes" doc:"Size labels, by name (after the size prefix), and the number of changed lines, generated files excluded, under which each applies; 0 marks the size of everything larger. The default is Kubernetes' scale."`
 	MaxLines      int           `json:"maxLines" minimum:"1" doc:"Changed lines (generated files excluded) above which the plan warns and suggests a split. Reviews lose effectiveness beyond about 400."`
 	// Template is "auto", "ship" or a path in the repository.
-	Template      string   `json:"template" doc:"Pull request body: \"auto\" fills the repository's pull request template when it has one (as GitHub finds it on the default branch), \"ship\" always uses ship-it's format, or the path of a template in the repository (for a .github/PULL_REQUEST_TEMPLATE/ directory)."`
-	Sections      Sections `json:"sections"`
-	Reviewers     []string `json:"reviewers" itemPattern:"^[A-Za-z0-9](-?[A-Za-z0-9])*$" patternHint:"GitHub logins (letters, digits and single hyphens)" doc:"Logins whose review is requested on a new pull request (never its author). A request GitHub refuses is a warning."`
-	TeamReviewers []string `json:"teamReviewers" itemPattern:"^[A-Za-z0-9][A-Za-z0-9._-]*$" patternHint:"team slugs of the repository's organisation, such as backend" doc:"Teams of the repository's organisation, by slug, whose review is requested on a new pull request. A request GitHub refuses is a warning."`
-	AssignSelf    bool     `json:"assignSelf" doc:"Assign a new pull request to its author."`
-	Milestone     string   `json:"milestone" enum:"issue,none" doc:"\"issue\" puts a new pull request in the milestone of the issue it closes, \"none\" leaves milestones alone."`
+	Template       string   `json:"template" doc:"Pull request body: \"auto\" fills the repository's pull request template when it has one (as GitHub finds it on the default branch), \"ship\" always uses ship-it's format, or the path of a template in the repository (for a .github/PULL_REQUEST_TEMPLATE/ directory)."`
+	SensitivePaths []string `json:"sensitivePaths" doc:"Paths whose changes ship preview counts as sensitive in its risk score, as glob patterns, on top of continuous integration and dependencies."`
+	Sections       Sections `json:"sections"`
+	Reviewers      []string `json:"reviewers" itemPattern:"^[A-Za-z0-9](-?[A-Za-z0-9])*$" patternHint:"GitHub logins (letters, digits and single hyphens)" doc:"Logins whose review is requested on a new pull request (never its author). A request GitHub refuses is a warning."`
+	TeamReviewers  []string `json:"teamReviewers" itemPattern:"^[A-Za-z0-9][A-Za-z0-9._-]*$" patternHint:"team slugs of the repository's organisation, such as backend" doc:"Teams of the repository's organisation, by slug, whose review is requested on a new pull request. A request GitHub refuses is a warning."`
+	AssignSelf     bool     `json:"assignSelf" doc:"Assign a new pull request to its author."`
+	Milestone      string   `json:"milestone" enum:"issue,none" doc:"\"issue\" puts a new pull request in the milestone of the issue it closes, \"none\" leaves milestones alone."`
 }
 
 // Values of ship.pullRequest.draft.
@@ -355,7 +357,8 @@ func Defaults() Settings {
 				LabelPrefixes: LabelPrefixes{Kind: pullrequest.DefaultKindPrefix, Size: pullrequest.DefaultSizePrefix},
 				Sizes:         DefaultSizes(), MaxLines: 400, Template: TemplateAuto,
 				Sections:  Sections{Why: true, Testing: true, Issue: true, Changes: true},
-				Reviewers: []string{}, TeamReviewers: []string{}, Milestone: MilestoneIssue},
+				Reviewers: []string{}, TeamReviewers: []string{}, Milestone: MilestoneIssue,
+				SensitivePaths: slices.Clone(risk.DefaultSensitivePaths)},
 			Issues:  IssueSettings{Keyword: "Closes", TrackerKeys: []string{}},
 			Secrets: SecretsSettings{IgnorePaths: []string{}, Rules: []SecretRule{}, DisabledRules: []string{}, Allow: []string{}},
 			Gates:   GatesSettings{Enabled: true, AllowSkip: true},
