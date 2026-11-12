@@ -16,6 +16,7 @@ import (
 	"runtime/debug"
 	"strings"
 
+	"github.com/GregoireF/ship-it/internal/adapters/browser"
 	"github.com/GregoireF/ship-it/internal/adapters/checkpointstore"
 	"github.com/GregoireF/ship-it/internal/adapters/footprint"
 	"github.com/GregoireF/ship-it/internal/adapters/fsconfig"
@@ -144,6 +145,7 @@ func workspace(git *gitexec.Client, journal *obs.Journal) app.Workspace {
 		ws.RunLogs = journal
 	}
 	ws.Footprint = footprint.New(git, platform.CurrentEnvironment())
+	ws.Browser = browser.New(runtime.GOOS)
 	return ws
 }
 

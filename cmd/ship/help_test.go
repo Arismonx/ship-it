@@ -22,7 +22,7 @@ var everyCommand = [][]string{
 	{"checkpoint"}, {"checkpoint", "create"}, {"checkpoint", "list"}, {"checkpoint", "restore"},
 	{"undo"}, {"gc"}, {"trace"}, {"publish"}, {"preview"}, {"status"}, {"tidy"}, {"log"}, {"fix"}, {"label"},
 	{"stack"}, {"stack", "status"}, {"stack", "sync"}, {"stack", "merge"}, {"stack", "publish"},
-	{"mcp"}, {"mcp", "install"}, {"uninstall"},
+	{"mcp"}, {"mcp", "install"}, {"uninstall"}, {"bug"},
 	{"config"}, {"config", "get"}, {"config", "set"}, {"config", "unset"}, {"config", "explain"},
 	{"init"}, {"sync"}, {"roadmap"}, {"roadmap", "sync"},
 	{"check"}, {"check", "title"}, {"check", "branch"}, {"check", "signoff"}, {"check", "gates"},

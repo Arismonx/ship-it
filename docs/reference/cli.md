@@ -468,6 +468,15 @@ ship uninstall [--user] [--dry-run] [-y|--yes] [--json]
 ```
 
 It cannot be undone, the checkpoints included, so the question defaults to no; without a terminal it needs `--yes` (exit `2`). It has no MCP tool: an agent never uninstalls. The binary goes with the tool that installed it: [Remove](../how-to/install.md#remove).
+### `ship bug`
+
+Writes a bug report from a past run's journal, then opens a prefilled issue on ship-it's tracker once you agree. By default it reports the last run that failed, else the last run; `ship trace --list` gives the ids.
+
+```text
+ship bug [<run>] [--print]
+```
+
+The report holds only what the scrubbed journal holds, plus the git version; it is written to `<run_id>.report.md` next to the journal for you to read and attach. ship sends nothing: it opens the page, and you submit it. `--print` only prints the report and the address. Details: [logs](logs.md#9-bug-reports-no-telemetry).
 
 ### `ship version`
 
@@ -620,7 +629,7 @@ These commands and features do not exist yet; see the [roadmap](../../ROADMAP.md
 
 - Automatic atomic commits: split the work into several commits by intent (0.2).
 - `ship watch` and `ship rewind`: checkpoints taken as files change, and a way back to any of them.
-- `ship explain <code>`, `ship bug` and `ship skill install` (see the [roadmap](../../ROADMAP.md) for 0.2).
+- `ship explain <code>` and `ship skill install` (see the [roadmap](../../ROADMAP.md) for 0.2).
 - `ship release`: compute the version, write the changelog, create the tag and the GitHub release.
 - `ship login` and `ship logout`: sign in with the GitHub device flow and keep the token in the system keychain.
 - `ship rewind`: go back to any moment of your files, from checkpoints taken while you work (0.2; today, `ship checkpoint restore <id>`).

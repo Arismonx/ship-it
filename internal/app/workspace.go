@@ -41,6 +41,8 @@ type Workspace struct {
 	RunLogs ports.RunLogs
 	// Footprint is what ship uninstall finds and removes; nil refuses it.
 	Footprint ports.Footprint
+	// Browser opens a page for ship bug; nil only prints its address.
+	Browser ports.Browser
 	// Log is the technical journal (docs/reference/logs.md); nil logs
 	// nothing. Use cases log stable message keys, never sentences.
 	Log *slog.Logger

@@ -55,7 +55,7 @@ func ListRuns(dir string) ([]RunFiles, error) {
 	byID := map[RunID]*RunFiles{}
 	for _, e := range entries {
 		name := e.Name()
-		if e.IsDir() || !strings.HasSuffix(name, JournalSuffix) {
+		if e.IsDir() || !(strings.HasSuffix(name, JournalSuffix) || strings.HasSuffix(name, ReportSuffix)) {
 			continue
 		}
 		id, _, _ := strings.Cut(name, ".")

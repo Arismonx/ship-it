@@ -19,6 +19,9 @@ import (
 const (
 	JournalSuffix  = ".jsonl"
 	BlackBoxSuffix = ".blackbox.jsonl"
+	// ReportSuffix is the bug report ship bug writes about a run: pruned
+	// with it.
+	ReportSuffix = ".report.md"
 )
 
 // Log files hold technical details of the user's work: only they may read them.

@@ -33,7 +33,7 @@ No `-v`: clig.dev notes it is ambiguous between verbose and version. The short f
 - unexpected failure (exit code 1) or recovered panic → the ring is written to `<logs>/<run_id>.blackbox.jsonl` and the error message on stderr points to it (`cli.blackbox.saved`, English and French). A panic is recovered, journaled with its stack (scrubbed), and reported as an internal error (`cli.error.panic`) instead of a Go stack trace;
 - expected refusals (red gate, policy, a human needed, usage error, nothing to undo…) are not failures of ship-it: no black box;
 - under MCP (`ship mcp`), a panicking request becomes a JSON-RPC internal error naming the black box, and the server keeps serving;
-- Planned: `ship bug` will read it (§9).
+- `ship bug` reads it to build a bug report (§9).
 
 Result: no more "run it again with --debug and send me the output".
 
@@ -143,15 +143,17 @@ Run 01M5N78ZF8TNCD09QHWD8YJ558: 5 steps
 - Codes are never reused; a retired code stays documented as obsolete.
 - Process exit codes: unchanged ([cli](cli.md)).
 
-## 9. Bug reports (no telemetry, planned)
+## 9. Bug reports (no telemetry)
 
-| Trigger | Behaviour |
+ship sends nothing by itself. `ship bug [<run>] [--print]` builds the report of a past run, by default the last that failed (it has a black box), else the last run:
+
+| Step | What happens |
 |---|---|
-| Unexpected error or panic | Today: a clear message, the code and the path of the black box. Planned: "Run `ship bug` to report it" |
-| `ship bug` | Builds a report: version, OS, arch, git, an anonymised summary of the black box, and shows it for review; the user removes what they want; nothing is sent without confirmation |
-| Sending | Opens `https://github.com/GregoireF/ship-it/issues/new?template=bug.yml&…` with the form fields pre-filled by URL parameters; if the URL is too long (`414 URI Too Long`), the details are copied to the clipboard or saved to a file to drop in the `upload` field |
-| VS Code | "ship-it: Report a bug" command (same flow, through `ship mcp --attended`) |
-| MCP | A `ship_bug_report` tool that prepares the report; the human approves sending |
+| Report | Built from the run's journal only, already scrubbed: the command, ship's version, the platform, the exit code, the error (a fault's code and key, or the error, or a panic and its stack) and the timeline of `ship trace`. The git version is read now. Written to `<logs>/<run_id>.report.md`, pruned with the run, and printed for you to read |
+| Address | `https://github.com/GregoireF/ship-it/issues/new?template=1-bug-report.yml&…`: the text fields `ship-version`, `git-version`, `what-happened` and `trace` are prefilled (a field's `id` is its URL parameter, per [GitHub's form schema](https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-githubs-form-schema)). The dropdowns are left to you. The timeline stays in the file, never in the address, which GitHub limits (`414 URI Too Long`) |
+| Sending | After `[Y/n]` in a terminal, ship opens the address in your default browser (`rundll32 url.dll,FileProtocolHandler`, `open` or `xdg-open`, never a shell). You attach the file and submit the issue yourself. `--print` only prints |
+
+Planned: a "ship-it: Report a bug" command in VS Code, and a tool for agents that prepares the report while a human sends it.
 
 ## 10. Where it lives in the code
 

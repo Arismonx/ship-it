@@ -26,6 +26,7 @@ var commandArguments = map[string]string{
 	"config explain":     "<key>",
 	"trace":              "[<run>]",
 	"log":                "[--agent [<name>]]",
+	"bug":                "[<run>]",
 }
 
 // commandList names the subcommands a command's help lists, by flag set

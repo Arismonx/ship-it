@@ -144,6 +144,8 @@ func (r runner) dispatch(args []string) int {
 		return r.uninstall(args[1:])
 	case "trace":
 		return r.trace(args[1:])
+	case "bug":
+		return r.bug(args[1:])
 	default:
 		r.status(i18n.Render(lang, "cli.error.unknown_command", map[string]string{"command": args[0]}))
 		return ExitUsage
