@@ -100,11 +100,19 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      # The notes of the release are the version's section of CHANGELOG.md,
+      # not a list of commits (a squashed release pull request is one commit).
+      # It fails without a dated section: no release goes out without notes.
+      - name: release notes
+        env:
+          TAG: ${{ github.ref_name }}
+          NOTES: ${{ runner.temp }}/release-notes.md
+        run: go run ./tools/releasenotes "$TAG" > "$NOTES"
       - uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de # v7.3.0
         with:
           distribution: goreleaser
           version: v2.19.0 # pin: goreleaser
-          args: release --clean
+          args: release --clean --release-notes=${{ runner.temp }}/release-notes.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Private half of a deploy key that can write to GregoireF/homebrew-tap

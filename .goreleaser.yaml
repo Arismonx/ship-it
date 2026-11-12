@@ -170,6 +170,8 @@ scoops:
     commit_msg_template: "ship {{ .Tag }} (scoop)"
     skip_upload: auto
 
+# Unused by release.yml, which passes the CHANGELOG.md section with
+# --release-notes; kept for a local `goreleaser release --snapshot`.
 changelog:
   sort: asc
 
