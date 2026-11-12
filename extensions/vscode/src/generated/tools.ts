@@ -76,6 +76,7 @@ export type ShipDoctorResult = {
 
 export type ShipLogResult = {
   operations: ({
+    agent?: string;
     branch?: string;
     deleted?: string[] | null;
     id: string;

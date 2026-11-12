@@ -184,11 +184,13 @@ ship saves a checkpoint before undoing. It refuses when the repository moved sin
 
 ### `ship log`
 
-Lists what ship did, newest first. `↶` marks what `ship undo` reverts next; undone operations are flagged.
+Lists what ship did, newest first. `↶` marks what `ship undo` reverts next; undone operations are flagged, and so is what an AI agent did through MCP, with its name.
 
 ```text
-ship log [-n N] [--json]
+ship log [-n N] [--agent [<name>]] [--json]
 ```
+
+`--agent` keeps only what agents did; `--agent claude` (or `--agent=claude`) what one agent did. The name is the one `ship mcp install` gave the server with `--client`, or the one the agent gives itself when it connects.
 
 `-n N` sets how many operations to show (20 by default).
 
@@ -409,7 +411,7 @@ ship types [--json]
 
 ### `ship mcp`
 
-Starts the MCP server on stdin and stdout, for AI agents. It offers 11 tools; see [use ship-it with AI coding agents](../how-to/use-with-ai-agents.md).
+Starts the MCP server on stdin and stdout, for AI agents. It offers 11 tools; see [use ship-it with AI coding agents](../how-to/use-with-ai-agents.md). `--client <name>` names the agent, which every operation made through the server records (`ship log --agent`); `ship mcp install` writes it in the agent's project file. Without it, the server uses the name the agent gives in its handshake.
 
 ```text
 ship mcp [--attended]

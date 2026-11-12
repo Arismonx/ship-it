@@ -12,6 +12,7 @@ import (
 	"log/slog"
 	"runtime/debug"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -61,6 +62,10 @@ type Server struct {
 	// may change GitHub when the human confirmed it. Agents get `ship mcp`,
 	// with the safeguards of ADR-0010.
 	Attended bool
+	// Client names the agent (ship mcp --client claude, written by ship mcp
+	// install). Without it, the name the client gives in its initialize
+	// request is used. Every operation made through the server records it.
+	Client string
 	// Log receives diagnostics; it must be stderr, never stdout.
 	Log io.Writer
 	// Journal records each request (method, tool, duration, trace context)
@@ -72,6 +77,22 @@ type Server struct {
 	mu  sync.Mutex
 	// legacy is the revision negotiated by initialize, "" for modern clients.
 	legacy string
+	// handshakeClient is the clientInfo name of the initialize request.
+	handshakeClient string
+}
+
+// unknownAgent records an agent that gave no name.
+const unknownAgent = "unknown"
+
+// agentName is the name operations record: --client, else the handshake's.
+func (s *Server) agentName() string {
+	switch {
+	case s.Client != "":
+		return s.Client
+	case s.handshakeClient != "":
+		return s.handshakeClient
+	}
+	return unknownAgent
 }
 
 type request struct {
@@ -245,11 +266,15 @@ func (s *Server) serverInfo() map[string]any {
 func (s *Server) initialize(req request) (map[string]any, error) {
 	var params struct {
 		ProtocolVersion string `json:"protocolVersion"`
+		ClientInfo      struct {
+			Name string `json:"name"`
+		} `json:"clientInfo"`
 	}
 	if err := json.Unmarshal(req.Params, &params); err != nil {
 		return nil, &rpcError{Code: codeInvalidParams, Message: "invalid initialize params"}
 	}
 	s.legacy = legacyVersions[0]
+	s.handshakeClient = strings.ToLower(strings.TrimSpace(params.ClientInfo.Name))
 	if slices.Contains(legacyVersions, params.ProtocolVersion) {
 		s.legacy = params.ProtocolVersion
 	}

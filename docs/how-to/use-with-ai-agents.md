@@ -115,7 +115,7 @@ Run `ship mcp` as a stdio MCP server, from the repository you work in. It speaks
 | `ship_deliver` | `title`, `branch`, `only`, `issue`, `why`, `tested`, `dryRun` | A checkpoint, a dedicated branch when on the default branch, then one conventional commit. Returns the operation id, checkpoint, branch, whether it created the branch, commit and title. Nothing is pushed. |
 | `ship_publish` | `issue`, `dryRun` | Runs the project's checks, updates the branch on the default branch, pushes it and opens a draft pull request, or updates the open one. Returns the pull request, the checks (`gates`), the labels and the warnings. |
 | `ship_undo` | `allowRemote`, `dryRun` | Reverts the last local operation of ship-it, keeping your files, and returns what it undid. A publication is refused (see below). |
-| `ship_log` | none | The latest operations of ship-it in this repository, newest first, with the one `ship_undo` would revert. |
+| `ship_log` | none | The latest operations of ship-it in this repository, newest first, with the one `ship_undo` would revert, and the agent that made each one. |
 | `ship_doctor` | none | Every problem that would stop a delivery (`findings`), each with the command that fixes it, and the worst one (`worst`). |
 | `ship_config_get` | `key` | The effective value of one setting and the layer it comes from (`source`, `path`). |
 | `ship_config_explain` | `key` | What one setting does, its type, allowed values and default, its `SHIP_*` variable, the value every layer gives it and why the effective one wins. |

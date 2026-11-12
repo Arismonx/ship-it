@@ -9,8 +9,10 @@ import (
 	"regexp"
 )
 
-// tomlTable declares ship-it for Codex. "ship-it" is a valid bare key.
-const tomlTable = "[mcp_servers.ship-it]\ncommand = \"ship\"\nargs = [\"mcp\"]\n"
+// tomlTableFor declares ship-it for Codex. "ship-it" is a valid bare key.
+func tomlTableFor(c Client) string {
+	return "[mcp_servers.ship-it]\ncommand = \"ship\"\nargs = [\"mcp\", \"--client\", \"" + string(c) + "\"]\n"
+}
 
 var (
 	// ourHeader is a table header naming ship-it's server, quoted or not.
@@ -24,7 +26,7 @@ var (
 // nothing else: the standard library has no TOML parser, so the file is never
 // rewritten, only extended. Whenever appending could clash with what the file
 // already holds, it refuses with ErrManualEdit.
-func addTOML(existing []byte) (Result, error) {
+func addTOML(existing []byte, tomlTable string) (Result, error) {
 	if len(bytes.TrimSpace(existing)) == 0 {
 		return Result{Content: []byte(tomlTable), Changed: true}, nil
 	}

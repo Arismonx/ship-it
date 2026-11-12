@@ -128,6 +128,10 @@ type Operation struct {
 	// AIAssistant names who wrote the plan of a delivery when it was not the
 	// deterministic planner ("host agent" over MCP); the pull request says so.
 	AIAssistant string `json:"ai_assistant,omitempty"`
+	// Agent names the AI agent that made the operation through MCP (the
+	// client ship mcp --client names, or the one its handshake gives); empty
+	// for a person at the terminal (#49).
+	Agent string `json:"agent,omitempty"`
 
 	// Remote effects of a Publish, recorded so that compensations can come
 	// later (docs/design/undo-storage-optimizations.md: close the pull request, delete the branch if unchanged).

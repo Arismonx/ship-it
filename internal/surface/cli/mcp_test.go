@@ -15,7 +15,7 @@ func TestMCPInstallPrintsTheSnippetOfEveryClient(t *testing.T) {
 		"claude": "\"mcpServers\": {\n    \"ship-it\": {\n      \"type\": \"stdio\",\n      \"command\": \"ship\",",
 		"vscode": "\"servers\": {\n    \"ship-it\": {",
 		"cursor": "\"mcpServers\": {",
-		"codex":  "[mcp_servers.ship-it]\ncommand = \"ship\"\nargs = [\"mcp\"]\n",
+		"codex":  "[mcp_servers.ship-it]\ncommand = \"ship\"\nargs = [\"mcp\", \"--client\", \"codex\"]\n",
 	} {
 		var calls []string
 		git := testkit.HealthyRepository("main")
@@ -65,7 +65,7 @@ func TestMCPInstallRefusals(t *testing.T) {
 	git.WorkingFiles = map[string]string{".codex/config.toml": "mcp_servers = { docs = { command = \"x\" } }\n"}
 	code, stdout, stderr := runWith(git, "", false, "mcp", "install", "--client", "codex", "--yes")
 	if code != ExitNeedsHuman || len(calls) != 0 || !strings.Contains(stderr, "SHIP-E0715") ||
-		!strings.Contains(stderr, "Add this to .codex/config.toml") || stdout != "[mcp_servers.ship-it]\ncommand = \"ship\"\nargs = [\"mcp\"]\n" {
+		!strings.Contains(stderr, "Add this to .codex/config.toml") || stdout != "[mcp_servers.ship-it]\ncommand = \"ship\"\nargs = [\"mcp\", \"--client\", \"codex\"]\n" {
 		t.Errorf("exit %d, calls %q\n%s%s", code, calls, stdout, stderr)
 	}
 

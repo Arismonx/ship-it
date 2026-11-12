@@ -14,6 +14,7 @@ import (
 	"os/signal"
 	"runtime"
 	"runtime/debug"
+	"strings"
 
 	"github.com/GregoireF/ship-it/internal/adapters/checkpointstore"
 	"github.com/GregoireF/ship-it/internal/adapters/fsconfig"
@@ -51,10 +52,10 @@ func main() {
 
 	// `ship mcp` serves agents on stdin/stdout: nothing else may write there.
 	// --attended is for the VS Code extension, where a human reviews.
-	if len(args) >= 1 && args[0] == "mcp" && (len(args) == 1 || args[1] == "--attended") {
+	if attended, client, ok := mcpServeArgs(args); ok {
 		limits := app.RunLogLimits(ctx, ws)
 		journal.SetLimits(obs.Retention{Runs: limits.KeepRuns, Bytes: limits.MaxBytes}, limits.BlackBoxBytes)
-		server := &mcp.Server{Workspace: ws, Version: version, Log: os.Stderr, Attended: len(args) == 2, Journal: journal}
+		server := &mcp.Server{Workspace: ws, Version: version, Log: os.Stderr, Attended: attended, Client: client, Journal: journal}
 		journal.Logger.Info("run.start", "command", "mcp", "version", version, "os", runtime.GOOS, "arch", runtime.GOARCH)
 		err := server.Serve(ctx, os.Stdin, os.Stdout)
 		stop()
@@ -191,4 +192,26 @@ func uiLanguage() i18n.Language {
 		}
 	}
 	return i18n.DefaultLanguage
+}
+
+// mcpServeArgs reads `ship mcp [--attended] [--client <name>]`: the server
+// on stdin/stdout. Anything else (ship mcp install…) is the CLI's.
+func mcpServeArgs(args []string) (attended bool, client string, ok bool) {
+	if len(args) == 0 || args[0] != "mcp" {
+		return false, "", false
+	}
+	for i := 1; i < len(args); i++ {
+		switch a := args[i]; {
+		case a == "--attended":
+			attended = true
+		case a == "--client" && i+1 < len(args):
+			i++
+			client = strings.ToLower(strings.TrimSpace(args[i]))
+		case strings.HasPrefix(a, "--client="):
+			client = strings.ToLower(strings.TrimSpace(strings.TrimPrefix(a, "--client=")))
+		default:
+			return false, "", false
+		}
+	}
+	return attended, client, true
 }
