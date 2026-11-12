@@ -144,7 +144,7 @@ ship shows what merges and asks for confirmation; `--yes` merges without asking.
 Publishes a stack made with `ship stack --local`. Run it from the top layer.
 
 ```text
-ship stack publish [--issue N] [--draft] [--skip-gates] [--dry-run] [--json]
+ship stack publish [-y|--yes] [--issue N] [--draft] [--skip-gates] [--dry-run] [--json]
 ```
 
 The flags mean what they mean for `ship stack`.
