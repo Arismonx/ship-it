@@ -21,6 +21,12 @@ type RepositoryInfo struct {
 	// Parent is the repository a fork was made from; nil when the
 	// repository is no fork.
 	Parent *ParentRepository
+	// Private: only the people given access see the repository.
+	Private bool
+	// TokenScopes are the scopes of the classic token that read it
+	// (X-OAuth-Scopes); nil when GitHub does not say, as for fine-grained
+	// tokens and GitHub Apps.
+	TokenScopes []string
 }
 
 // ParentRepository is the repository a fork was made from: pull requests

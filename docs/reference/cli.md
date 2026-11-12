@@ -264,10 +264,18 @@ It asks GitHub for at most 5 seconds. `--offline` does not ask GitHub at all.
 Checks git, your identity, the repository, then GitHub with a single read: token found (and where), refused, repository not visible, or GitHub unreachable. Each problem comes with the command that fixes it.
 
 ```text
-ship doctor [--json]
+ship doctor [--deep] [--json]
 ```
 
 GitHub problems are warnings, since local work goes on. Exits `1` on a blocking problem. Which token ship uses: [GitHub access](github-access.md).
+
+`--deep` looks for what would fail later, on GitHub or in the project, and runs the project's checks once, so it can take minutes:
+
+- **The token's scopes**, for a classic token: `repo` (`public_repo` is enough for a public repository) blocks when it is missing; `workflow` is advised when the branch changes `.github/workflows`, and `project` when `github.project.url` is set. GitHub does not show the scopes of a fine-grained token or a GitHub App, and `--deep` says so.
+- **The rulesets** that would refuse the branch name or its commits, as `ship publish` checks them before a push.
+- **The project's checks**, as `ship check gates` runs them.
+
+What it could not check, without network for instance, is reported as a warning (`SHIP-W0319`).
 
 ### `ship fix`
 

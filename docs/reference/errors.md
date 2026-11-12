@@ -288,6 +288,42 @@ A command that works on a repository ran outside one.
 
 > Not inside a git repository: cd into your project, or run git init.
 
+### SHIP-E0317
+
+The classic token lacks the scope every push and pull request needs (repo, or public_repo for a public repository).
+
+*Exit code 1.*
+
+> The token lacks the {scope} scope: GitHub will refuse every push and pull request.
+
+To fix it: gh auth refresh --hostname {host} --scopes {scope} (or a token with the {scope} scope in GH_TOKEN)
+
+### SHIP-W0318
+
+The classic token lacks a scope this repository will need: workflow to push workflow files, project for the roadmap.
+
+*Warning: ship goes on.*
+
+> The token lacks the project scope, and github.project.url is set: ship roadmap sync cannot update the project.
+
+> The token lacks the workflow scope, and this branch changes .github/workflows: GitHub will refuse the push.
+
+To fix it: gh auth refresh --hostname {host} --scopes {scope} (or a token with the {scope} scope in GH_TOKEN)
+
+### SHIP-W0319
+
+Ship doctor --deep could not run one of its checks.
+
+*Warning: ship goes on.*
+
+> Project checks not run: they could not start.
+
+> Rulesets not checked: GitHub could not be asked, or HEAD is detached.
+
+> Token scopes not checked: GitHub could not be asked.
+
+To fix it: https://www.githubstatus.com and your proxy (HTTPS_PROXY); local work goes on · ship check gates (shows why)
+
 ## Checkpoints and undo
 
 ### SHIP-E0401

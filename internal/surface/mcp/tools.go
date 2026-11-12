@@ -166,9 +166,19 @@ var tools = []tool{
 	{
 		name: "ship_doctor", title: "Check git, configuration and GitHub",
 		description: "Every problem that would stop a delivery, each with the exact command that fixes it.",
-		input:       object(map[string]any{}),
-		output:      app.DoctorReport{}, readOnly: true, openWorld: true,
+		input: object(map[string]any{"deep": map[string]any{"type": "boolean",
+			"description": "Also check the token's scopes and the rulesets, and run the project's checks once (can take minutes)."}}),
+		output: app.DoctorReport{}, readOnly: true, openWorld: true,
 		run: func(ctx context.Context, s *Server, raw json.RawMessage) (any, error) {
+			var args struct {
+				Deep bool `json:"deep"`
+			}
+			if err := decode(raw, &args); err != nil {
+				return nil, err
+			}
+			if args.Deep {
+				return app.CheckUpDeep(ctx, s.Workspace, nil), nil
+			}
 			return app.CheckUp(ctx, s.Workspace), nil
 		},
 	},

@@ -78,6 +78,7 @@ func (c *Client) Repository(ctx context.Context, repo forge.Repository) (ports.R
 		DefaultBranch string `json:"default_branch"`
 		HTMLURL       string `json:"html_url"`
 		Fork          bool   `json:"fork"`
+		Private       bool   `json:"private"`
 		Parent        *struct {
 			Name  string `json:"name"`
 			Owner struct {
@@ -88,8 +89,16 @@ func (c *Client) Repository(ctx context.Context, repo forge.Repository) (ports.R
 			SSHURL        string `json:"ssh_url"`
 		} `json:"parent"`
 	}
-	err := c.do(ctx, repo, http.MethodGet, repoPath(repo), nil, &out)
-	info := ports.RepositoryInfo{DefaultBranch: out.DefaultBranch, HTMLURL: out.HTMLURL}
+	header, err := c.doWithHeader(ctx, repo, http.MethodGet, repoPath(repo), nil, &out)
+	info := ports.RepositoryInfo{DefaultBranch: out.DefaultBranch, HTMLURL: out.HTMLURL, Private: out.Private}
+	if scopes, classic := header["X-Oauth-Scopes"]; classic {
+		info.TokenScopes = []string{}
+		for _, s := range strings.Split(strings.Join(scopes, ","), ",") {
+			if s = strings.TrimSpace(s); s != "" {
+				info.TokenScopes = append(info.TokenScopes, s)
+			}
+		}
+	}
 	if p := out.Parent; out.Fork && p != nil && p.Owner.Login != "" && p.Name != "" {
 		info.Parent = &ports.ParentRepository{
 			Repository:    forge.Repository{Host: repo.Host, Owner: p.Owner.Login, Name: p.Name},

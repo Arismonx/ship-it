@@ -173,10 +173,16 @@ var severityLabels = map[string]string{"ok": "✓ ok   ", "warning": "⚠ warn "
 
 func (r runner) doctor(args []string) int {
 	fs, asJSON := r.flags("doctor")
+	deep := fs.Bool("deep", false, "also check the token's scopes, the rulesets and the project's checks (runs them)")
 	if code, ok := r.parse(fs, args); !ok {
 		return code
 	}
-	report := app.CheckUp(r.ctx, r.deps)
+	var report app.DoctorReport
+	if *deep {
+		report = app.CheckUpDeep(r.ctx, r.deps, r.gateProgress(*asJSON))
+	} else {
+		report = app.CheckUp(r.ctx, r.deps)
+	}
 	if *asJSON {
 		r.writeJSON(report)
 	} else {

@@ -6,6 +6,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Added
 
+- `ship doctor --deep` also checks what would fail later: the token's scopes against what the repository needs (`SHIP-E0317`, `SHIP-W0318`), the rulesets that would refuse the branch or its commits, and the project's checks, run once; what it cannot check is reported (`SHIP-W0319`). `ship_doctor` takes `deep` (#54).
 - `ship log --agent [<name>]`: what AI agents did, or one of them. Every operation made through `ship mcp` records the agent, named by `--client` (which `ship mcp install` now writes) or by the agent's handshake (#49).
 - `ship preview` ends with a review risk (low, medium, high) and the facts behind it: the size, source changed without tests, sensitive paths (`ship.pullRequest.sensitivePaths`), removals (#45).
 - Pull requests get an `area/<scope>` label from their commit scope when the repository has it (`✨ feat(cli): …` gets `area/cli`), in `ship publish` and `ship label` (#127).

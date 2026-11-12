@@ -70,6 +70,26 @@ func TestDoctorChecksGitHub(t *testing.T) {
 	}
 }
 
+// TestCheckUpDeep: #54. The token's scopes come from the repository read,
+// and without a runner the project's checks are reported as not run.
+func TestCheckUpDeep(t *testing.T) {
+	ws, _, _ := workspaceOf(testkit.HealthyRepository("main"))
+	ws.Forge, ws.Credentials = &testkit.FakeForge{Private: true, TokenScopes: []string{"read:org"}}, tokenFrom("gh")
+	ws.Runner = nil
+	report := CheckUpDeep(context.Background(), ws, nil)
+	if !report.Blocking() || !hasFinding(report, "doctor.deep.scope_missing") ||
+		!hasFinding(report, "doctor.deep.rulesets_ok") || !hasFinding(report, "doctor.deep.unchecked_gates") {
+		t.Fatalf("report = %+v", report.Findings)
+	}
+
+	// GitHub unreachable: the scopes and rulesets are said unchecked.
+	ws.Forge = &testkit.FakeForge{Err: errors.New("dial tcp: no route")}
+	report = CheckUpDeep(context.Background(), ws, nil)
+	if !hasFinding(report, "doctor.deep.unchecked_scopes") || !hasFinding(report, "doctor.deep.unchecked_rulesets") {
+		t.Fatalf("offline report = %+v", report.Findings)
+	}
+}
+
 func TestDoctorWithoutGitHubRemoteSkipsTheNetwork(t *testing.T) {
 	git := testkit.HealthyRepository("main")
 	git.RemoteURLs = map[string]string{"origin": "/srv/git/shop.git"}

@@ -79,6 +79,55 @@ func TestDiagnose(t *testing.T) {
 	}
 }
 
+// TestDiagnoseDeep: #54. Scopes by what the repository needs, refusals as
+// they are, and what could not be checked.
+func TestDiagnoseDeep(t *testing.T) {
+	granted := func(private bool, scopes ...string) *GitHubFacts {
+		return &GitHubFacts{Host: "github.com", Access: GitHubAccessGranted, Private: private, Scopes: scopes}
+	}
+	refusal := fault.New(fault.BranchNameRefused, "publish.rules.branch_refused", "branch", "wip")
+	red := fault.New(fault.GateFailed, "gates.failed_check", "gate", "test")
+	tests := []struct {
+		name string
+		gh   *GitHubFacts
+		deep DeepFacts
+		want []fault.Code
+	}{
+		{"all good", granted(true, "repo", "workflow"), DeepFacts{GatesRan: true, GatesPassed: 3, Workflows: true}, nil},
+		{"public_repo is enough for a public repository", granted(false, "public_repo"), DeepFacts{GatesRan: true}, nil},
+		{"public_repo is not enough for a private one", granted(true, "public_repo"), DeepFacts{GatesRan: true}, []fault.Code{fault.TokenScopeMissing}},
+		{"workflow and project when needed", granted(true, "repo"), DeepFacts{Workflows: true, Project: true, GatesRan: true},
+			[]fault.Code{fault.TokenScopeAdvised, fault.TokenScopeAdvised}},
+		{"project not needed without a project", granted(true, "repo"), DeepFacts{GatesRan: true}, nil},
+		{"fine-grained token: scopes unknown", granted(true), DeepFacts{GatesRan: true}, nil},
+		{"a ruleset and a red gate", granted(true, "repo"), DeepFacts{Refusal: refusal, GatesRan: true, GateFailure: red},
+			[]fault.Code{fault.BranchNameRefused, fault.GateFailed}},
+		{"offline", &GitHubFacts{Host: "github.com", Access: GitHubUnreachable}, DeepFacts{Unchecked: []string{DeepScopes, DeepRulesets, DeepGates}},
+			[]fault.Code{fault.GitHubUnreachable, fault.DeepUnchecked, fault.DeepUnchecked, fault.DeepUnchecked}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			facts := healthyFacts()
+			facts.GitHub, facts.Deep = tt.gh, &tt.deep // granted(true) has nil scopes
+			findings := Diagnose(facts)
+			got := codes(findings)
+			if len(got) != len(tt.want) {
+				t.Fatalf("codes = %v, want %v", got, tt.want)
+			}
+			for i := range got {
+				if got[i] != tt.want[i] {
+					t.Errorf("code %d = %s, want %s", i, got[i], tt.want[i])
+				}
+			}
+			for _, f := range findings {
+				if f.Code == fault.TokenScopeMissing && f.Params["scope"] != "repo" {
+					t.Errorf("a private repository needs repo, the finding says %q", f.Params["scope"])
+				}
+			}
+		})
+	}
+}
+
 func TestWorst(t *testing.T) {
 	facts := healthyFacts()
 	facts.DetachedHead = true

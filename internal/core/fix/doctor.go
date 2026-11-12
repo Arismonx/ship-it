@@ -90,6 +90,8 @@ type Facts struct {
 	// can commit but not publish.
 	RemoteNotGitHub  bool
 	LongPathsEnabled bool // core.longpaths, relevant on Windows only
+	// Deep is set by ship doctor --deep.
+	Deep *DeepFacts
 	// GitHub is set when origin is a GitHub repository and the network check
 	// was requested; nil otherwise.
 	GitHub *GitHubFacts
@@ -126,7 +128,38 @@ type GitHubFacts struct {
 	// TokenSource names where the token came from ("GH_TOKEN", "gh"…).
 	TokenSource string
 	Access      GitHubAccess
+	// Private and Scopes come with a granted access. Scopes are a classic
+	// token's; nil when GitHub does not say (fine-grained tokens, Apps).
+	Private bool
+	Scopes  []string
 }
+
+// DeepFacts are what ship doctor --deep adds (#54): the token's scopes
+// against what the repository needs, the rulesets, the project's checks.
+type DeepFacts struct {
+	// Workflows: the branch changes .github/workflows, which a classic token
+	// pushes only with the workflow scope.
+	Workflows bool
+	// Project: github.project.url is set; the roadmap writes to it.
+	Project bool
+	// Refusal is what a ruleset would refuse in the branch or its commits.
+	Refusal *fault.Fault
+	// GatesRan: the project's checks ran. GatesPassed counts the green ones,
+	// GateFailure is the first that was not.
+	GatesRan    bool
+	GatesPassed int
+	GateFailure *fault.Fault
+	// Unchecked names what could not be checked: DeepScopes, DeepRulesets,
+	// DeepGates.
+	Unchecked []string
+}
+
+// The checks of ship doctor --deep, as DeepFacts.Unchecked names them.
+const (
+	DeepScopes   = "scopes"
+	DeepRulesets = "rulesets"
+	DeepGates    = "gates"
+)
 
 // Diagnose evaluates the facts. Findings come in a stable order; blocking
 // findings stop the remaining checks that depend on them.
@@ -224,6 +257,81 @@ func Diagnose(f Facts) []Finding {
 		case GitHubUnreachable:
 			add(fault.GitHubUnreachable, Warning, "doctor.github.unreachable", "doctor.remedy.github_status", params...)
 		}
+	}
+	if d := f.Deep; d != nil {
+		findings = append(findings, diagnoseDeep(f.GitHub, d)...)
+	}
+	return findings
+}
+
+// diagnoseDeep evaluates what ship doctor --deep found. A missing repo
+// scope blocks: no push or pull request can succeed without it.
+func diagnoseDeep(gh *GitHubFacts, d *DeepFacts) []Finding {
+	var findings []Finding
+	add := func(code fault.Code, severity Severity, key, remedy string, kv ...string) {
+		finding := Finding{Code: code, Severity: severity, Key: key, Remedy: remedy, Params: map[string]string{}}
+		for i := 0; i+1 < len(kv); i += 2 {
+			finding.Params[kv[i]] = kv[i+1]
+		}
+		findings = append(findings, finding)
+	}
+	// A refusal's message already says how to fix it.
+	refused := func(problem *fault.Fault) {
+		findings = append(findings, Finding{Code: problem.Code, Severity: Blocking, Key: problem.Key, Params: problem.Params})
+	}
+	unchecked := map[string]bool{}
+	for _, name := range d.Unchecked {
+		unchecked[name] = true
+	}
+
+	switch {
+	case unchecked[DeepScopes]:
+		add(fault.DeepUnchecked, Warning, "doctor.deep.unchecked_scopes", "doctor.remedy.github_status")
+	case gh == nil || gh.Access != GitHubAccessGranted:
+	case gh.Scopes == nil:
+		add(fault.Healthy, Healthy, "doctor.deep.scopes_unknown", "")
+	default:
+		granted := map[string]bool{}
+		for _, s := range gh.Scopes {
+			granted[s] = true
+		}
+		problems := len(findings)
+		if !granted["repo"] && (gh.Private || !granted["public_repo"]) {
+			scope := "repo"
+			if !gh.Private {
+				scope = "public_repo"
+			}
+			add(fault.TokenScopeMissing, Blocking, "doctor.deep.scope_missing", "doctor.remedy.add_scope", "scope", scope, "host", gh.Host)
+		}
+		if d.Workflows && !granted["workflow"] {
+			add(fault.TokenScopeAdvised, Warning, "doctor.deep.scope_workflow", "doctor.remedy.add_scope", "scope", "workflow", "host", gh.Host)
+		}
+		if d.Project && !granted["project"] {
+			add(fault.TokenScopeAdvised, Warning, "doctor.deep.scope_project", "doctor.remedy.add_scope", "scope", "project", "host", gh.Host)
+		}
+		if len(findings) == problems {
+			add(fault.Healthy, Healthy, "doctor.deep.scopes_ok", "", "scopes", strings.Join(gh.Scopes, ", "))
+		}
+	}
+
+	switch {
+	case unchecked[DeepRulesets]:
+		add(fault.DeepUnchecked, Warning, "doctor.deep.unchecked_rulesets", "doctor.remedy.github_status")
+	case d.Refusal != nil:
+		refused(d.Refusal)
+	case gh != nil && gh.Access == GitHubAccessGranted:
+		add(fault.Healthy, Healthy, "doctor.deep.rulesets_ok", "")
+	}
+
+	switch {
+	case unchecked[DeepGates]:
+		add(fault.DeepUnchecked, Warning, "doctor.deep.unchecked_gates", "doctor.remedy.run_gates")
+	case d.GateFailure != nil:
+		refused(d.GateFailure)
+	case d.GatesRan && d.GatesPassed == 0:
+		add(fault.Healthy, Healthy, "doctor.deep.gates_none", "")
+	case d.GatesRan:
+		add(fault.Healthy, Healthy, "doctor.deep.gates_ok", "", "count", strconv.Itoa(d.GatesPassed))
 	}
 	return findings
 }

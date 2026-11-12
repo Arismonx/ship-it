@@ -108,6 +108,26 @@ func TestProjectRequests(t *testing.T) {
 	}
 }
 
+// TestRepositoryReadsTheTokenScopes: #54. A classic token's scopes come with
+// every answer; a fine-grained token's do not.
+func TestRepositoryReadsTheTokenScopes(t *testing.T) {
+	c := newClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-OAuth-Scopes", "repo, workflow")
+		fmt.Fprint(w, `{"default_branch":"main","private":true}`)
+	})
+	info, err := c.Repository(context.Background(), repo)
+	if err != nil || !info.Private || strings.Join(info.TokenScopes, ",") != "repo,workflow" {
+		t.Fatalf("info = %+v, err = %v", info, err)
+	}
+
+	c = newClient(t, func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"default_branch":"main"}`)
+	})
+	if info, err = c.Repository(context.Background(), repo); err != nil || info.TokenScopes != nil || info.Private {
+		t.Fatalf("fine-grained: info = %+v, err = %v", info, err)
+	}
+}
+
 func TestProjectScopeMissing(t *testing.T) {
 	c := newClient(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-OAuth-Scopes", "repo, read:org")

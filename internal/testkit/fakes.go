@@ -680,6 +680,9 @@ type FakeForge struct {
 	Rules      map[string][]rules.Rule
 	RulesErr   error
 	RulesAsked []string
+	// Private and TokenScopes are what Repository answers.
+	Private     bool
+	TokenScopes []string
 	// Parent makes every other repository a fork of it; DefaultBranches
 	// are the default branches by "owner/name".
 	Parent          *ports.ParentRepository
@@ -766,7 +769,7 @@ func (f *FakeForge) Repository(_ context.Context, repo forge.Repository) (ports.
 	if branch == "" {
 		branch = "main"
 	}
-	info := ports.RepositoryInfo{DefaultBranch: branch}
+	info := ports.RepositoryInfo{DefaultBranch: branch, Private: f.Private, TokenScopes: f.TokenScopes}
 	if p := f.Parent; p != nil {
 		if repo.Slug() == p.Repository.Slug() {
 			info.DefaultBranch = p.DefaultBranch

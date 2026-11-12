@@ -116,7 +116,7 @@ Run `ship mcp` as a stdio MCP server, from the repository you work in. It speaks
 | `ship_publish` | `issue`, `dryRun` | Runs the project's checks, updates the branch on the default branch, pushes it and opens a draft pull request, or updates the open one. Returns the pull request, the checks (`gates`), the labels and the warnings. |
 | `ship_undo` | `allowRemote`, `dryRun` | Reverts the last local operation of ship-it, keeping your files, and returns what it undid. A publication is refused (see below). |
 | `ship_log` | none | The latest operations of ship-it in this repository, newest first, with the one `ship_undo` would revert, and the agent that made each one. |
-| `ship_doctor` | none | Every problem that would stop a delivery (`findings`), each with the command that fixes it, and the worst one (`worst`). |
+| `ship_doctor` | `deep` | Every problem that would stop a delivery (`findings`), each with the command that fixes it, and the worst one (`worst`). `deep` also checks the token's scopes and the rulesets, and runs the project's checks once. |
 | `ship_config_get` | `key` | The effective value of one setting and the layer it comes from (`source`, `path`). |
 | `ship_config_explain` | `key` | What one setting does, its type, allowed values and default, its `SHIP_*` variable, the value every layer gives it and why the effective one wins. |
 | `ship_stack` | `layers`, `local`, `dryRun` | Splits the work into layers by area (or the `layers` given, bottom first), commits each on its own branch based on the one below, then pushes them and opens one draft pull request per layer, grouped in a GitHub stack (a classic chain where the server has none). Run it from the default branch. |

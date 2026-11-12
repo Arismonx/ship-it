@@ -188,6 +188,14 @@ const (
 	RemoteNotGitHub Code = "SHIP-W0315"
 	// NotInRepository: a command that works on a repository ran outside one.
 	NotInRepository Code = "SHIP-E0316"
+	// TokenScopeMissing: the classic token lacks the scope every push and
+	// pull request needs (repo, or public_repo for a public repository).
+	TokenScopeMissing Code = "SHIP-E0317"
+	// TokenScopeAdvised: the classic token lacks a scope this repository
+	// will need: workflow to push workflow files, project for the roadmap.
+	TokenScopeAdvised Code = "SHIP-W0318"
+	// DeepUnchecked: ship doctor --deep could not run one of its checks.
+	DeepUnchecked Code = "SHIP-W0319"
 )
 
 // Codes of stacks of pull requests (10xx range).
