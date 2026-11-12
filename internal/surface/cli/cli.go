@@ -140,6 +140,8 @@ func (r runner) dispatch(args []string) int {
 		return r.fixCommand(args[1:])
 	case "mcp":
 		return r.mcpCommand(args[1:])
+	case "uninstall":
+		return r.uninstall(args[1:])
 	case "trace":
 		return r.trace(args[1:])
 	default:

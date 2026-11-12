@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"fmt"
 	"regexp"
+	"strings"
 )
 
 // tomlTableFor declares ship-it for Codex. "ship-it" is a valid bare key.
@@ -21,6 +22,37 @@ var (
 	// an array of tables: a [mcp_servers.ship-it] table cannot extend either.
 	inlineServers = regexp.MustCompile(`(?m)^[ \t]*(mcp_servers[ \t]*=|\[\[[ \t]*mcp_servers\b)`)
 )
+
+// legacyTOMLTable is what ship mcp install appended before --client (0.1).
+const legacyTOMLTable = "[mcp_servers.ship-it]\ncommand = \"ship\"\nargs = [\"mcp\"]\n"
+
+// removeTOML takes out the table ship mcp install appended, with the blank
+// line before it, and changes nothing else. Any other ship-it table is the
+// user's: without a TOML parser its end cannot be told (ErrManualEdit).
+func removeTOML(existing []byte, c Client) (Removal, error) {
+	lf := bytes.ReplaceAll(existing, []byte("\r\n"), []byte("\n"))
+	for _, table := range []string{tomlTableFor(c), legacyTOMLTable} {
+		text := "\n" + string(lf)
+		at := strings.Index(text, "\n"+table)
+		if at < 0 {
+			continue
+		}
+		before, after := text[:at], text[at+1+len(table):]
+		before = strings.TrimSuffix(before, "\n") // the blank line addTOML adds
+		out := strings.TrimPrefix(before+"\n"+after, "\n")
+		if strings.TrimSpace(out) == "" {
+			return Removal{Changed: true, Empty: true}, nil
+		}
+		if bytes.Contains(existing, []byte("\r\n")) {
+			out = strings.ReplaceAll(out, "\n", "\r\n")
+		}
+		return Removal{Content: []byte(out), Changed: true}, nil
+	}
+	if ourHeader.Match(existing) {
+		return Removal{}, fmt.Errorf("%w: its %s table was not written by ship mcp install", ErrManualEdit, ServerName)
+	}
+	return Removal{Content: existing}, nil
+}
 
 // addTOML appends the ship-it table to a Codex config.toml and changes
 // nothing else: the standard library has no TOML parser, so the file is never

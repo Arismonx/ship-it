@@ -17,6 +17,7 @@ import (
 	"strings"
 
 	"github.com/GregoireF/ship-it/internal/adapters/checkpointstore"
+	"github.com/GregoireF/ship-it/internal/adapters/footprint"
 	"github.com/GregoireF/ship-it/internal/adapters/fsconfig"
 	"github.com/GregoireF/ship-it/internal/adapters/ghauth"
 	"github.com/GregoireF/ship-it/internal/adapters/gitexec"
@@ -142,6 +143,7 @@ func workspace(git *gitexec.Client, journal *obs.Journal) app.Workspace {
 	if journal.Dir() != "" {
 		ws.RunLogs = journal
 	}
+	ws.Footprint = footprint.New(git, platform.CurrentEnvironment())
 	return ws
 }
 

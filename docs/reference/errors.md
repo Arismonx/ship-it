@@ -288,6 +288,8 @@ A command that works on a repository ran outside one.
 
 > Not inside a git repository: cd into your project, or run git init.
 
+> Not inside a git repository: {command} removes a repository's data from inside it. Your own files go with ship uninstall --user.
+
 ### SHIP-E0317
 
 The classic token lacks the scope every push and pull request needs (repo, or public_repo for a public repository).

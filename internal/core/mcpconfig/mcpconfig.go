@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 )
 
@@ -129,6 +130,69 @@ func (t Target) Add(existing []byte) (Result, error) {
 		return addTOML(existing, tomlTableFor(t.Client))
 	}
 	return addJSON(existing, t.ServersKey, t.Entry())
+}
+
+// Removal is the configuration after taking ship-it out (#55).
+type Removal struct {
+	Content []byte
+	// Changed: ship-it was there and Content must be written.
+	Changed bool
+	// Empty: nothing else was in the file, which can go.
+	Empty bool
+}
+
+// Remove returns the configuration without ship-it, everything else kept.
+// A TOML file is changed only when it holds the very table ship mcp install
+// appends; another ship-it table is the user's (ErrManualEdit).
+func (t Target) Remove(existing []byte) (Removal, error) {
+	if t.Format == TOML {
+		return removeTOML(existing, t.Client)
+	}
+	return removeJSON(existing, t.ServersKey)
+}
+
+func removeJSON(existing []byte, serversKey string) (Removal, error) {
+	if len(bytes.TrimSpace(existing)) == 0 {
+		return Removal{Content: existing}, nil
+	}
+	root, err := parseObject(existing)
+	if err != nil {
+		return Removal{}, fmt.Errorf("mcpconfig: %w", err)
+	}
+	raw, ok := root.values[serversKey]
+	if !ok {
+		return Removal{Content: existing}, nil
+	}
+	servers, err := parseObject(raw)
+	if err != nil {
+		return Removal{}, fmt.Errorf("mcpconfig: %s: %w", serversKey, err)
+	}
+	if _, ok := servers.values[ServerName]; !ok {
+		return Removal{Content: existing}, nil
+	}
+	servers.remove(ServerName)
+	if len(servers.keys) == 0 {
+		root.remove(serversKey)
+	} else {
+		encoded, err := servers.encode("")
+		if err != nil {
+			return Removal{}, err
+		}
+		root.set(serversKey, encoded)
+	}
+	if len(root.keys) == 0 {
+		return Removal{Changed: true, Empty: true}, nil
+	}
+	out, err := root.encode("")
+	if err != nil {
+		return Removal{}, err
+	}
+	return Removal{Content: append(out, '\n'), Changed: true}, nil
+}
+
+func (o *object) remove(key string) {
+	delete(o.values, key)
+	o.keys = slices.DeleteFunc(o.keys, func(k string) bool { return k == key })
 }
 
 // AddServer adds ship-it to a Claude Code .mcp.json.

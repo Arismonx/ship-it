@@ -35,8 +35,10 @@ Run the same command again: the scripts install the latest release over the old 
 
 ## Remove
 
-1. Remove the binary the way you installed it: `brew uninstall ship`, `scoop uninstall ship`, or delete `ship` from `~/.local/bin`, `%LOCALAPPDATA%\Programs\ship` or `$(go env GOPATH)/bin`.
-2. Remove what ship wrote for you, if you want no trace left:
+Do it in this order, while `ship` is still there:
+
+1. In each repository where you used it, run `ship uninstall`. It lists what it would remove, then asks: `.git/ship` (the checkpoints, the operation log and the run logs), and the `ship-it` entry that `ship mcp install` wrote in a coding agent's project file. The agent's other servers stay; a file that only held ship-it goes. **The checkpoints are your way back**: after this, `ship undo` has nothing left to undo. `--dry-run` only lists.
+2. Run `ship uninstall --user` once, for your own files:
 
    | | Settings | Cache | Logs |
    |---|---|---|---|
@@ -44,8 +46,7 @@ Run the same command again: the scripts install the latest release over the old 
    | macOS | `~/Library/Application Support/ship-it` | `~/Library/Caches/ship-it` | `~/Library/Logs/ship-it` |
    | Windows | `%APPDATA%\ship-it` | `%LOCALAPPDATA%\ship-it\cache` | `%LOCALAPPDATA%\ship-it\logs` |
 
-   (`$XDG_CONFIG_HOME`, `$XDG_CACHE_HOME` and `$XDG_STATE_HOME` move the Linux folders when they are set.)
-3. In each repository where you used it, delete `.git/ship`: the checkpoints, the operation log and the run logs. **The checkpoints are your way back**: after this, `ship undo` has nothing left to undo.
-4. If you declared ship to a coding agent with `ship mcp install`, remove the `ship-it` entry from that agent's project file; keep the other entries.
+   (`$XDG_CONFIG_HOME`, `$XDG_CACHE_HOME` and `$XDG_STATE_HOME` move the Linux folders when they are set.) An organisation policy deployed by your IT department is never touched.
+3. Remove the binary the way you installed it: `brew uninstall ship`, `scoop uninstall ship`, or delete `ship` from `~/.local/bin`, `%LOCALAPPDATA%\Programs\ship` or `$(go env GOPATH)/bin`. The container image goes with `docker image rm ghcr.io/gregoiref/ship`.
 
-A `ship uninstall` command that does steps 2 to 4 for you is planned ([#55](https://github.com/GregoireF/ship-it/issues/55)).
+Already removed the binary? The folders above and `.git/ship` can be deleted by hand.

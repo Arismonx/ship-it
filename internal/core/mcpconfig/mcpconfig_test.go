@@ -81,6 +81,50 @@ args = ["-y", "@upstash/context7-mcp"]
 MY_ENV_VAR = "MY_ENV_VALUE"`,
 }
 
+// TestRemoveUndoesAdd: #55. Taking ship-it out gives back the user's file,
+// and a file that only held ship-it is empty.
+func TestRemoveUndoesAdd(t *testing.T) {
+	for _, tg := range Targets {
+		t.Run(string(tg.Client), func(t *testing.T) {
+			added, err := tg.Add([]byte(existing[tg.Client]))
+			if err != nil {
+				t.Fatal(err)
+			}
+			removed, err := tg.Remove(added.Content)
+			if err != nil || !removed.Changed || removed.Empty {
+				t.Fatalf("Remove = %+v, %v", removed, err)
+			}
+			same := strings.TrimSpace(string(removed.Content)) == strings.TrimSpace(existing[tg.Client])
+			if tg.Format == JSON {
+				same = sameJSON(removed.Content, []byte(existing[tg.Client]))
+			}
+			if !same {
+				t.Errorf("after Remove:\n%s\nwant:\n%s", removed.Content, existing[tg.Client])
+			}
+
+			alone, _ := tg.Add(nil)
+			if removed, err := tg.Remove(alone.Content); err != nil || !removed.Empty {
+				t.Errorf("only ship-it: %+v, %v", removed, err)
+			}
+			if removed, err := tg.Remove([]byte(existing[tg.Client])); err != nil || removed.Changed {
+				t.Errorf("no ship-it: %+v, %v", removed, err)
+			}
+		})
+	}
+}
+
+func TestRemoveTOMLOfOlderVersionsAndByHand(t *testing.T) {
+	codex := target(t, Codex)
+	old := "model = \"gpt-5\"\r\n\r\n[mcp_servers.ship-it]\r\ncommand = \"ship\"\r\nargs = [\"mcp\"]\r\n"
+	if r, err := codex.Remove([]byte(old)); err != nil || string(r.Content) != "model = \"gpt-5\"\r\n" {
+		t.Errorf("0.1 table: %q, %v", r.Content, err)
+	}
+	byHand := "[mcp_servers.ship-it]\ncommand = \"/opt/ship\"\nargs = [\"mcp\"]\n"
+	if _, err := codex.Remove([]byte(byHand)); !errors.Is(err, ErrManualEdit) {
+		t.Errorf("a table of the user's: %v", err)
+	}
+}
+
 func TestEveryClientHasItsGoldenFiles(t *testing.T) {
 	for _, tg := range Targets {
 		t.Run(string(tg.Client), func(t *testing.T) {

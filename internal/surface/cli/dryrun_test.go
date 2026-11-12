@@ -22,6 +22,7 @@ var writingCommands = map[string]bool{
 	"stack": true, "stack publish": true, "stack sync": true, "stack merge": true,
 	"check gates":       true, // lists the gates: they may write build outputs
 	"checkpoint create": true, "checkpoint restore": true,
+	"uninstall": true,
 }
 
 func TestEveryWritingCommandTakesDryRun(t *testing.T) {

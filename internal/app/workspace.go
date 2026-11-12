@@ -39,6 +39,8 @@ type Workspace struct {
 	Agent bool
 	// RunLogs are the journals of past runs, pruned by `ship gc`; nil skips.
 	RunLogs ports.RunLogs
+	// Footprint is what ship uninstall finds and removes; nil refuses it.
+	Footprint ports.Footprint
 	// Log is the technical journal (docs/reference/logs.md); nil logs
 	// nothing. Use cases log stable message keys, never sentences.
 	Log *slog.Logger
