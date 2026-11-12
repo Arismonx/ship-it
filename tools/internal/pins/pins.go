@@ -49,10 +49,10 @@ var Tools = []Tool{
 }
 
 var (
-	Zizmor     = Tool{Name: "zizmor", Version: "1.31.1", Source: PyPI, Repo: "zizmor"}
+	Zizmor     = Tool{Name: "zizmor", Version: "1.32.0", Source: PyPI, Repo: "zizmor"}
 	Actionlint = Tool{Name: "actionlint", Version: "v1.7.12", Source: GitHub, Repo: "rhysd/actionlint"}
 	GoReleaser = Tool{Name: "goreleaser", Version: "v2.19.0", Source: GitHub, Repo: "goreleaser/goreleaser"}
-	Cosign     = Tool{Name: "cosign", Version: "v3.1.3", Source: GitHub, Repo: "sigstore/cosign"}
+	Cosign     = Tool{Name: "cosign", Version: "v3.1.4", Source: GitHub, Repo: "sigstore/cosign"}
 	Buildx     = Tool{Name: "buildx", Version: "v0.38.0", Source: GitHub, Repo: "docker/buildx"}
 )
 

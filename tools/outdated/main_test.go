@@ -8,6 +8,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -47,15 +48,38 @@ func ghRelease(tag string, published time.Time) string {
 	return `{"tag_name":"` + tag + `","published_at":"` + published.Format(time.RFC3339) + `"}`
 }
 
+// bump returns the next minor version of v, keeping its "v" prefix: the
+// tests follow the pins, whatever they are today.
+func bump(t *testing.T, v string) string {
+	t.Helper()
+	parts := strings.Split(strings.TrimPrefix(v, "v"), ".")
+	minor, err := strconv.Atoi(parts[1])
+	if err != nil || len(parts) != 3 {
+		t.Fatalf("pin %q is not X.Y.Z", v)
+	}
+	prefix := strings.TrimSuffix(v, strings.TrimPrefix(v, "v"))
+	return prefix + parts[0] + "." + strconv.Itoa(minor+1) + ".0"
+}
+
+// columns returns the columns of a tool's line in the table.
+func columns(out, tool string) string {
+	for _, line := range strings.Split(out, "\n") {
+		if f := strings.Fields(line); len(f) > 0 && f[0] == tool {
+			return strings.Join(f[1:], " ")
+		}
+	}
+	return ""
+}
+
 func TestCheck(t *testing.T) {
 	old := now.Add(-30 * 24 * time.Hour)
 	c := registry(t, map[string]string{
-		"rhysd/actionlint":      ghRelease("v1.7.12", old),                // same
-		"goreleaser/goreleaser": ghRelease("v2.20.0", old),                // behind
-		"sigstore/cosign":       ghRelease("v3.2.0", now.Add(-time.Hour)), // in cooldown
-		"docker/buildx":         ghRelease("v0.38.0", old),
+		"rhysd/actionlint":      ghRelease(pins.Actionlint.Version, old),                      // same
+		"goreleaser/goreleaser": ghRelease(bump(t, pins.GoReleaser.Version), old),             // behind
+		"sigstore/cosign":       ghRelease(bump(t, pins.Cosign.Version), now.Add(-time.Hour)), // in cooldown
+		"docker/buildx":         ghRelease(pins.Buildx.Version, old),
 	}, map[string]string{
-		"zizmor": `{"info":{"version":"1.32.0"},"urls":[{"upload_time_iso_8601":"2026-10-01T10:00:00Z"}]}`,
+		"zizmor": `{"info":{"version":"` + bump(t, pins.Zizmor.Version) + `"},"urls":[{"upload_time_iso_8601":"2026-10-01T10:00:00Z"}]}`,
 	}, "Bearer secret")
 
 	var out bytes.Buffer
@@ -66,14 +90,14 @@ func TestCheck(t *testing.T) {
 	if code != 1 {
 		t.Errorf("exit code = %d, want 1", code)
 	}
-	for _, want := range []string{
-		"zizmor      1.31.1   1.32.0   behind",
-		"actionlint  v1.7.12  v1.7.12  up to date",
-		"goreleaser  v2.19.0  v2.20.0  behind",
-		"cosign      v3.1.3   v3.2.0   newer, in cooldown until 2026-10-30",
+	for tool, want := range map[string]string{
+		"zizmor":     pins.Zizmor.Version + " " + bump(t, pins.Zizmor.Version) + " behind",
+		"actionlint": pins.Actionlint.Version + " " + pins.Actionlint.Version + " up to date",
+		"goreleaser": pins.GoReleaser.Version + " " + bump(t, pins.GoReleaser.Version) + " behind",
+		"cosign":     pins.Cosign.Version + " " + bump(t, pins.Cosign.Version) + " newer, in cooldown until 2026-10-30",
 	} {
-		if !strings.Contains(out.String(), want) {
-			t.Errorf("output lacks %q:\n%s", want, out.String())
+		if got := columns(out.String(), tool); got != want {
+			t.Errorf("%s: %q, want %q\n%s", tool, got, want, out.String())
 		}
 	}
 }
@@ -95,7 +119,7 @@ func TestUpToDateAndMarkdown(t *testing.T) {
 	if err != nil || code != 0 {
 		t.Fatalf("code = %d, err = %v", code, err)
 	}
-	if !strings.Contains(out.String(), "| zizmor | 1.31.1 | 1.31.1 | up to date |") {
+	if v := pins.Zizmor.Version; !strings.Contains(out.String(), "| zizmor | "+v+" | "+v+" | up to date |") {
 		t.Errorf("markdown:\n%s", out.String())
 	}
 }
