@@ -23,6 +23,7 @@ var helpArgs = map[string][]string{
 	"publish":            {"publish", "--help"},
 	"preview":            {"preview", "--help"},
 	"uninstall":          {"uninstall", "--help"},
+	"skill install":      {"skill", "install", "--help"},
 	"bug":                {"bug", "--help"},
 	"undo":               {"undo", "--help"},
 	"gc":                 {"gc", "--help"},

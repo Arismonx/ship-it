@@ -106,6 +106,12 @@ Go has no TOML parser in its standard library, and ship adds no dependency for o
 
 Run `ship mcp` as a stdio MCP server, from the repository you work in. It speaks MCP 2026-07-28 and the earlier revisions 2025-11-25 and 2025-06-18. `ship mcp install --print` gives a starting point.
 
+## Teach the agent with the skill
+
+`ship mcp install` also writes ship-it's [Agent Skill](https://agentskills.io): a `SKILL.md` that agents load when a task is about commits, pushes or pull requests. It tells them to plan before delivering, to publish drafts, to read ship-it's refusals, and what to leave to a human (merging, undoing a publication, uninstalling). `--no-skill` leaves it out.
+
+`ship skill install` writes it alone, for every agent at once: `.agents/skills/ship-it/SKILL.md`, read by Codex, Cursor and VS Code, and `.claude/skills/ship-it/SKILL.md`, read by Claude Code and VS Code. A `SKILL.md` you wrote yourself in those folders is never replaced. `ship skill install --print` shows it; commit the files so the team's agents get them.
+
 ## The tools
 
 | Tool | Arguments | What it returns |

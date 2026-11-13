@@ -47,6 +47,7 @@ var commandGroups = map[string]struct{ usage, key string }{
 	"check":   {"ship check <command> [flags] [arguments]", "cli.help.check_commands"},
 	"mcp":     {"ship mcp [<command>] [flags]", "cli.help.mcp_commands"},
 	"roadmap": {"ship roadmap <command> [flags]", "cli.help.roadmap_commands"},
+	"skill":   {"ship skill <command> [flags]", "cli.help.skill_commands"},
 }
 
 // groupHelp prints the usage of a group of subcommands when args ask for

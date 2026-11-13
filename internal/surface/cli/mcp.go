@@ -30,6 +30,7 @@ func (r runner) mcpCommand(args []string) int {
 	yes := fs.Bool("yes", false, "write without asking")
 	client := fs.String("client", "claude", "the AI agent to configure: "+strings.Join(app.MCPClients(), ", "))
 	printOnly := fs.Bool("print", false, "print what declares ship-it for the client, writing nothing")
+	noSkill := fs.Bool("no-skill", false, "do not write the Agent Skill (ship skill install) with it")
 	dryRun := dryRunFlag(fs)
 	if code, ok := r.parse(fs, args[1:]); !ok {
 		return code
@@ -47,11 +48,13 @@ func (r runner) mcpCommand(args []string) int {
 		return ExitOK
 	}
 	r = r.rehearse(*dryRun)
-	plan, err := app.InstallMCP(r.ctx, r.deps, *client, false)
+	withSkill := !*noSkill
+	plan, err := app.InstallMCPWith(r.ctx, r.deps, *client, withSkill, false)
 	if err != nil {
 		return r.failByHand(err, *client)
 	}
-	if !plan.Changed {
+	skillChanged := plan.Skill != nil && plan.Skill.Changed
+	if !plan.Changed && !skillChanged {
 		if *asJSON {
 			return r.writeJSON(plan)
 		}
@@ -60,23 +63,40 @@ func (r runner) mcpCommand(args []string) int {
 			key = "cli.mcp.kept"
 		}
 		r.note(i18n.Render(r.lang, key, map[string]string{"file": plan.Path}))
+		r.skillNotes(plan.Skill)
 		return ExitOK
 	}
-	if !*asJSON {
-		r.status(i18n.Render(r.lang, "cli.mcp.preview", map[string]string{"file": plan.Path}))
-		fmt.Fprint(r.streams.Out, plan.After)
+	files := []string{}
+	if plan.Changed {
+		files = append(files, plan.Path)
+		if !*asJSON {
+			r.status(i18n.Render(r.lang, "cli.mcp.preview", map[string]string{"file": plan.Path}))
+			fmt.Fprint(r.streams.Out, plan.After)
+		}
+	} else if !*asJSON {
+		key := "cli.mcp.already"
+		if plan.Kept {
+			key = "cli.mcp.kept"
+		}
+		r.note(i18n.Render(r.lang, key, map[string]string{"file": plan.Path}))
+	}
+	if skillChanged {
+		files = append(files, changedSkillFiles(plan.Skill)...)
+		if !*asJSON {
+			r.skillPreview(plan.Skill)
+		}
 	}
 	if !*yes && !*dryRun {
 		if !r.streams.Interactive {
 			r.status(i18n.Render(r.lang, "cli.mcp.needs_human", nil))
 			return ExitNeedsHuman
 		}
-		if !r.confirm(i18n.Render(r.lang, "cli.mcp.confirm", map[string]string{"file": plan.Path})) {
+		if !r.confirm(i18n.Render(r.lang, "cli.mcp.confirm", map[string]string{"file": strings.Join(files, ", ")})) {
 			r.status(i18n.Render(r.lang, "cli.ship.aborted", nil))
 			return ExitAborted
 		}
 	}
-	done, err := app.InstallMCP(r.ctx, r.deps, *client, true)
+	done, err := app.InstallMCPWith(r.ctx, r.deps, *client, withSkill, true)
 	if err != nil {
 		return r.fail(err)
 	}
@@ -86,8 +106,14 @@ func (r runner) mcpCommand(args []string) int {
 	if *dryRun {
 		return r.printPlanned(done.Rehearsal)
 	}
-	r.note(i18n.Render(r.lang, "cli.mcp.done", map[string]string{"file": done.Path}))
-	if key, ok := mcpNext[done.Client]; ok {
+	if done.Applied {
+		r.note(i18n.Render(r.lang, "cli.mcp.done", map[string]string{"file": done.Path}))
+	}
+	if done.Skill != nil && done.Skill.Applied {
+		r.note(i18n.Render(r.lang, "cli.skill.done", map[string]string{"files": strings.Join(changedSkillFiles(done.Skill), ", ")}))
+	}
+	r.skillNotes(done.Skill)
+	if key, ok := mcpNext[done.Client]; ok && done.Applied {
 		r.note(i18n.Render(r.lang, key, nil))
 	}
 	return ExitOK

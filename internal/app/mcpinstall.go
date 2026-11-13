@@ -29,6 +29,8 @@ type MCPInstall struct {
 	Applied bool `json:"applied"`
 	// Operation is the oplog entry: ship undo restores the file.
 	Operation string `json:"operation,omitempty"`
+	// Skill is the Agent Skill written with it, when asked (#50).
+	Skill *SkillInstall `json:"skill,omitempty"`
 	// Rehearsal: on a dry run, Applied says the file would be written.
 	Rehearsal
 }
@@ -61,6 +63,13 @@ func mcpTarget(client string) (mcpconfig.Target, error) {
 // ("" is Claude Code), keeping everything else; with apply false it only
 // computes the result to show.
 func InstallMCP(ctx context.Context, ws Workspace, client string, apply bool) (view MCPInstall, err error) {
+	return InstallMCPWith(ctx, ws, client, false, apply)
+}
+
+// InstallMCPWith is InstallMCP that, with withSkill, also writes the
+// client's Agent Skill (#50), in the same operation: one ship undo reverts
+// both.
+func InstallMCPWith(ctx context.Context, ws Workspace, client string, withSkill, apply bool) (view MCPInstall, err error) {
 	mark := ws.planMark()
 	defer func() { view.Rehearsal = ws.rehearsed(mark) }()
 	target, err := mcpTarget(client)
@@ -85,14 +94,40 @@ func InstallMCP(ctx context.Context, ws Workspace, client string, apply bool) (v
 			"file", target.Path, "line", "1", "column", "1", "detail", err.Error())
 	}
 	view.Before, view.After, view.Changed, view.Kept = before.Content, string(result.Content), result.Changed, result.Kept
-	if !apply || !result.Changed {
+	var befores []oplog.FileBefore
+	if result.Changed {
+		befores = append(befores, before)
+	}
+	var skillFiles []SkillFile
+	if withSkill {
+		targets, err := skillTargets(string(target.Client))
+		if err != nil {
+			return view, err
+		}
+		files, skillBefores, err := planSkill(ctx, ws, targets)
+		if err != nil {
+			return view, err
+		}
+		skillFiles = files
+		view.Skill = &SkillInstall{Files: files, Changed: len(skillBefores) > 0}
+		befores = append(befores, skillBefores...)
+	}
+	if !apply || len(befores) == 0 {
 		return view, nil
 	}
-	if err := ws.Git.WriteWorkingFile(ctx, target.Path, result.Content); err != nil {
+	if result.Changed {
+		if err := ws.Git.WriteWorkingFile(ctx, target.Path, result.Content); err != nil {
+			return view, err
+		}
+	}
+	if err := writeSkill(ctx, ws, skillFiles); err != nil {
 		return view, err
 	}
-	view.Applied = true
-	op, err := ws.Operations.Append(ctx, oplog.Operation{Kind: oplog.Fix, FilesBefore: []oplog.FileBefore{before}})
+	view.Applied = result.Changed
+	if view.Skill != nil {
+		view.Skill.Applied = view.Skill.Changed
+	}
+	op, err := ws.Operations.Append(ctx, oplog.Operation{Kind: oplog.Fix, FilesBefore: befores})
 	view.Operation = op.ID
 	return view, err
 }

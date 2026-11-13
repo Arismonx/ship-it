@@ -48,6 +48,10 @@ func TestUninstall(t *testing.T) {
 	if code, _, stderr = s.ship("uninstall", "--yes"); code != cli.ExitOK {
 		t.Fatalf("uninstall: %d\n%s", code, stderr)
 	}
+	// The skills ship mcp install wrote go too, with their empty folders.
+	if exists(filepath.Join(s.dir, ".claude")) || exists(filepath.Join(s.dir, ".agents")) {
+		t.Fatal("the Agent Skill and its folders should be gone")
+	}
 	shared, err := os.ReadFile(filepath.Join(s.dir, ".mcp.json"))
 	if exists(shipDir) || exists(filepath.Join(s.dir, ".cursor", "mcp.json")) || err != nil ||
 		strings.Contains(string(shared), "ship-it") || !strings.Contains(string(shared), "githubcopilot") {

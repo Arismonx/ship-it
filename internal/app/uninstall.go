@@ -9,6 +9,7 @@ import (
 
 	"github.com/GregoireF/ship-it/internal/core/fault"
 	"github.com/GregoireF/ship-it/internal/core/mcpconfig"
+	"github.com/GregoireF/ship-it/internal/core/skill"
 	"github.com/GregoireF/ship-it/internal/ports"
 )
 
@@ -75,6 +76,14 @@ func Uninstall(ctx context.Context, ws Workspace, user, apply bool) (UninstallPl
 			case removal.Changed:
 				plan.Edit = append(plan.Edit, target.Path)
 				edits = append(edits, edit{target.Path, removal.Content})
+			}
+		}
+		// The Agent Skill, where ship-it wrote it (#50); a SKILL.md of the
+		// user's stays.
+		for _, target := range skill.Targets {
+			content, err := ws.Git.ReadWorkingFile(ctx, target.Path(), packageJSONLimit)
+			if err == nil && skill.Ours(content) {
+				plan.Remove = append(plan.Remove, ports.Leftover{Kind: ports.LeftoverAgentFile, Path: target.Path(), Files: 1, Bytes: int64(len(content))})
 			}
 		}
 		found, err := ws.Footprint.Repository(ctx)

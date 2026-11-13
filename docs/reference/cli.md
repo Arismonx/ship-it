@@ -446,22 +446,33 @@ ship mcp [--attended]
 Declares ship-it in the project's MCP file of an agent, after showing the new file and asking.
 
 ```text
-ship mcp install [--client <name>] [--print] [--yes] [--dry-run] [--json]
+ship mcp install [--client <name>] [--no-skill] [--print] [--yes] [--dry-run] [--json]
 ```
 
 | Flag | Meaning |
 |---|---|
 | `--client <name>` | `claude` (the default) writes `.mcp.json`, `vscode` writes `.vscode/mcp.json`, `cursor` writes `.cursor/mcp.json`, `codex` appends to `.codex/config.toml`. |
+| `--no-skill` | Do not write the Agent Skill with it (`ship skill install`). |
 | `--print` | Print the entry and write nothing. |
 | `--yes` | Write without asking. |
 
-Other servers in the file are kept. The command is `ship` from the `PATH`, never an absolute path, since the file is committed. When the file cannot be changed safely, ship prints the entry to add by hand and exits `2` (`SHIP-E0715`). `ship undo` reverts the change.
+Other servers in the file are kept. The command is `ship` from the `PATH`, never an absolute path, since the file is committed. When the file cannot be changed safely, ship prints the entry to add by hand and exits `2` (`SHIP-E0715`). It also writes ship-it's Agent Skill where that agent reads it (below), in the same operation: `ship undo` reverts both.
+
+### `ship skill install`
+
+Writes ship-it's Agent Skill, `ship-it/SKILL.md`: how a coding agent delivers work with ship-it (the `ship_*` tools first, the `ship` command otherwise) and what it must leave to a human. Agents load it when a task is about commits, pushes or pull requests.
+
+```text
+ship skill install [--client <name>] [--print] [-y|--yes] [--dry-run] [--json]
+```
+
+By default it writes two copies, which every supported agent reads: `.agents/skills/ship-it/SKILL.md` (Codex, Cursor, VS Code) and `.claude/skills/ship-it/SKILL.md` (Claude Code, VS Code). `--client claude` writes the second only, `--client codex`, `cursor` or `vscode` the first. A `SKILL.md` that ship-it did not write is left as it is; one an older ship-it wrote is updated. `--print` prints the skill. `ship undo` removes what it wrote, and `ship uninstall` removes it too. Commit the files so that the team's agents get them.
 
 ## Other commands
 
 ### `ship uninstall`
 
-Removes what ship-it wrote, after listing it. In a repository: `.git/ship` (checkpoints, operation log, run logs, roadmap memory) and the `ship-it` server that `ship mcp install` declared in an agent's project file. The other servers stay; a file that only held ship-it goes; a `ship-it` entry ship-it did not write is left for you to remove. With `--user`: your configuration, cache and logs, never an organisation policy.
+Removes what ship-it wrote, after listing it. In a repository: `.git/ship` (checkpoints, operation log, run logs, roadmap memory) the `ship-it` server that `ship mcp install` declared in an agent's project file, and the Agent Skill `ship skill install` wrote. The other servers stay; a file that only held ship-it goes; a `ship-it` entry ship-it did not write is left for you to remove. With `--user`: your configuration, cache and logs, never an organisation policy.
 
 ```text
 ship uninstall [--user] [--dry-run] [-y|--yes] [--json]

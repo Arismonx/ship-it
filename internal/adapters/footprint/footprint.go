@@ -17,6 +17,7 @@ import (
 	"slices"
 
 	"github.com/GregoireF/ship-it/internal/core/mcpconfig"
+	"github.com/GregoireF/ship-it/internal/core/skill"
 	"github.com/GregoireF/ship-it/internal/platform"
 	"github.com/GregoireF/ship-it/internal/ports"
 )
@@ -119,18 +120,28 @@ func (f *Files) Remove(ctx context.Context, l ports.Leftover) error {
 
 // removeAgentFile deletes one of the files ship mcp install writes.
 func (f *Files) removeAgentFile(ctx context.Context, path string) error {
-	if !slices.ContainsFunc(mcpconfig.Targets, func(t mcpconfig.Target) bool { return t.Path == path }) {
-		return fmt.Errorf("footprint: %s is no agent file of ship mcp install", path)
+	isMCP := slices.ContainsFunc(mcpconfig.Targets, func(t mcpconfig.Target) bool { return t.Path == path })
+	isSkill := slices.ContainsFunc(skill.Targets, func(t skill.Target) bool { return t.Path() == path })
+	if !isMCP && !isSkill {
+		return fmt.Errorf("footprint: %s is no agent file of ship mcp install or ship skill install", path)
 	}
 	top, err := f.git.TopLevel(ctx)
 	if err != nil {
 		return err
 	}
-	err = os.Remove(filepath.Join(top, filepath.FromSlash(path)))
-	if errors.Is(err, fs.ErrNotExist) {
-		return nil
+	full := filepath.Join(top, filepath.FromSlash(path))
+	err = os.Remove(full)
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return err
 	}
-	return err
+	// The folders left empty go too (.claude/skills/ship-it, .vscode), up to
+	// the top level; os.Remove refuses a folder that still holds anything.
+	for dir := filepath.Dir(full); dir != top && len(dir) > len(top); dir = filepath.Dir(dir) {
+		if os.Remove(dir) != nil {
+			break
+		}
+	}
+	return nil
 }
 
 // within reports whether path is dir or inside it.
