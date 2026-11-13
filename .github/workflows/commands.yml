@@ -1,0 +1,105 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Grégoire Favreau
+#
+# Comment commands (docs/design/workflows.md §9), every 15 minutes:
+# - /take on an open, unassigned issue assigns its author; /release gives
+#   it back (#149);
+# - /ready by a pull request's author takes it out of draft and requests the
+#   maintainer's review, naming the checks still red (#158);
+# - /help answers with the commands and the useful links (#158).
+# No issue_comment trigger (zizmor: dangerous-triggers): comments are read
+# from the API and matched with jq, never run. A handled comment gets a 🚀
+# reaction from this job, so it is handled once although the windows overlap.
+name: commands
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+# Nothing by default; the job asks for what it needs.
+permissions: {}
+
+concurrency:
+  group: commands
+  cancel-in-progress: false
+
+jobs:
+  commands:
+    name: comment commands
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      issues: write # assign, comment and react on issues
+      pull-requests: write # leave draft, request a review, comment on pull requests
+      checks: read # name the red checks of a pull request
+      statuses: read # name the red statuses of a pull request
+    steps:
+      - name: answer the commands
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          MAINTAINER: ${{ github.repository_owner }}
+          SERVER: ${{ github.server_url }}
+        run: |
+          set -uo pipefail
+          base="$SERVER/$GH_REPO"
+          free="$base/issues?q=is%3Aopen+label%3A%22good+first+issue%22+no%3Aassignee"
+          help="Here is what you can write in a comment; I answer within a quarter of an hour.
+
+          - \`/take\`: on an issue nobody is assigned to, it becomes yours.
+          - \`/release\`: give back an issue you took.
+          - \`/ready\`: on your pull request, ask for a review.
+          - \`/help\`: this message.
+
+          Useful links: [CONTRIBUTING]($base/blob/main/CONTRIBUTING.md), the [good first issues]($free) still free, the [conventions]($base/blob/main/docs/reference/conventions.md) for titles and commits, and [Discussions]($base/discussions) for questions and ideas."
+          since="$(date -u -d '-3 hours' +%Y-%m-%dT%H:%M:%SZ)"
+          gh api --paginate "repos/$GH_REPO/issues/comments?since=$since&per_page=100" \
+            --jq '.[] | select(.body | test("^\\s*/(take|release|ready|help)\\b")) | [.id, (.issue_url | split("/") | last), .user.login, (.body | capture("^\\s*/(?<c>take|release|ready|help)").c)] | @tsv' |
+          while IFS=$'\t' read -r id number who command; do
+            if gh api "repos/$GH_REPO/issues/comments/$id/reactions" --jq '.[].user.login' | grep -qx 'github-actions\[bot\]'; then
+              continue # already handled
+            fi
+            read -r state pr author assignees < <(gh api "repos/$GH_REPO/issues/$number" \
+              --jq '"\(.state) \(.pull_request != null) \(.user.login) \([.assignees[].login] | join(",") | if . == "" then "-" else . end)"')
+            [ "$assignees" = "-" ] && assignees=""
+            case "$command" in
+              help)
+                gh issue comment "$number" --body "@$who, $help"
+                ;;
+              take)
+                if [ "$pr" = true ] || [ "$state" != open ]; then
+                  : # pull requests and closed issues are not claimed
+                elif [ -z "$assignees" ]; then
+                  if gh issue edit "$number" --add-assignee "$who"; then
+                    gh issue comment "$number" --body "Thank you @$who, this issue is yours! Say here if you have a question, or \`/release\` if you cannot go on. [CONTRIBUTING.md]($base/blob/main/CONTRIBUTING.md) has the conventions."
+                  else
+                    gh issue comment "$number" --body "@$who, GitHub did not let me assign this issue to you; a maintainer will do it soon."
+                  fi
+                elif [[ ",$assignees," != *",$who,"* ]]; then
+                  gh issue comment "$number" --body "Thank you @$who! This issue is already taken by @${assignees//,/, @}. The [good first issues]($free) without an assignee are free."
+                fi
+                ;;
+              release)
+                if [ "$pr" != true ] && [[ ",$assignees," = *",$who,"* ]]; then
+                  gh issue edit "$number" --remove-assignee "$who" &&
+                  gh issue comment "$number" --body "Thank you @$who for letting us know: this issue is free again."
+                fi
+                ;;
+              ready)
+                if [ "$pr" = true ] && [ "$state" = open ] && [ "$who" = "$author" ]; then
+                  gh pr ready "$number" > /dev/null 2>&1 || true # already out of draft
+                  if [ "$who" != "$MAINTAINER" ]; then
+                    gh pr edit "$number" --add-reviewer "$MAINTAINER" || true
+                  fi
+                  red="$(gh pr checks "$number" --json name,bucket --jq '[.[] | select(.bucket == "fail") | .name] | unique | join(", ")' 2>/dev/null || true)"
+                  answer="Thank you @$who, a review is requested."
+                  if [ -n "$red" ]; then
+                    answer="$answer These checks are still red: $red. Their details are in the Checks tab; fixing them first makes the review quicker."
+                  fi
+                  gh pr comment "$number" --body "$answer"
+                fi
+                ;;
+            esac
+            gh api -X POST "repos/$GH_REPO/issues/comments/$id/reactions" -f content=rocket > /dev/null
+          done
