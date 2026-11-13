@@ -45,7 +45,7 @@ jobs:
           set -uo pipefail
           base="$SERVER/$GH_REPO"
           free="$base/issues?q=is%3Aopen+label%3A%22good+first+issue%22+no%3Aassignee"
-          help="Here is what you can write in a comment; I answer within a quarter of an hour.
+          help="here is what you can write in a comment; I answer within a quarter of an hour.
 
           - \`/take\`: on an issue nobody is assigned to, it becomes yours.
           - \`/release\`: give back an issue you took.
