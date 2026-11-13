@@ -5,9 +5,37 @@ package gitexec
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
+	"time"
 )
+
+// remoteTip returns the commit branch points to on origin, "" when it does
+// not exist. ls-remote goes through the local transport, which now and then
+// fails on a loaded Windows machine (#144): it is retried as ship's own
+// fetches are, and a lasting failure says what git said instead of reading
+// as a missing branch.
+func remoteTip(t *testing.T, c *Client, branch string) string {
+	t.Helper()
+	var out []byte
+	var err error
+	for attempt := 0; ; attempt++ {
+		out, err = c.Run(context.Background(), "ls-remote", "origin", "refs/heads/"+branch)
+		var gitErr *Error
+		if err == nil || attempt == len(retryDelays) || !errors.As(err, &gitErr) || !containsAny(gitErr.Stderr, transientFetch) {
+			break
+		}
+		time.Sleep(retryDelays[attempt])
+	}
+	if err != nil {
+		t.Fatalf("git ls-remote origin refs/heads/%s: %v", branch, err)
+	}
+	if fields := strings.Fields(string(out)); len(fields) > 0 {
+		return fields[0]
+	}
+	return ""
+}
 
 // target builds a branch "target" from the first commit with one change.
 func target(t *testing.T, c *Client, file, content string) {
@@ -81,13 +109,13 @@ func TestDeleteRemoteBranchIsLeased(t *testing.T) {
 	if err := c.DeleteRemoteBranch(ctx, "origin", "x", first); err == nil {
 		t.Fatal("a stale lease must refuse the deletion")
 	}
-	if out, _ := c.Run(ctx, "ls-remote", "origin", "refs/heads/x"); len(out) == 0 {
+	if remoteTip(t, c, "x") == "" {
 		t.Fatal("x was deleted despite the stale lease")
 	}
 	if err := c.DeleteRemoteBranch(ctx, "origin", "x", second); err != nil {
 		t.Fatal(err)
 	}
-	if out, _ := c.Run(ctx, "ls-remote", "origin", "refs/heads/x"); len(out) != 0 {
+	if remoteTip(t, c, "x") != "" {
 		t.Fatal("x should be gone")
 	}
 }
@@ -107,10 +135,7 @@ func TestPushCommitIsLeased(t *testing.T) {
 	mustRun(t, c, "commit", "--quiet", "-m", "b")
 	second, _ := c.CommitOf(ctx, "HEAD")
 	mustRun(t, c, "push", "--quiet", "origin", second+":refs/heads/x")
-	tip := func(branch string) string {
-		out, _ := c.Run(ctx, "ls-remote", "origin", "refs/heads/"+branch)
-		return strings.Fields(string(out) + " ")[0]
-	}
+	tip := func(branch string) string { return remoteTip(t, c, branch) }
 
 	if err := c.PushCommit(ctx, "origin", "x", first, first); err == nil || tip("x") != second {
 		t.Fatalf("a stale lease must keep their push: %v, x at %s", err, tip("x"))
