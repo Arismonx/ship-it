@@ -52,15 +52,15 @@ Because they are visible to other people, ship asks you to confirm remote compen
 
 ## Restoring a checkpoint by hand
 
-`ship undo` covers almost every case. To go back to an older state of your files:
+`ship undo` covers almost every case. To go back to an older state of your files, `ship rewind` lists the recent checkpoints with the files that changed in each, and asks which one:
 
 ```sh
-ship checkpoint list            # the 20 newest, with their labels
-ship checkpoint restore 3f2a    # a short id is enough
+ship rewind                     # pick from the list
+ship rewind 3 --yes             # the third newest, without asking
 ship checkpoint --label before-experiment
 ```
 
-Before restoring, ship takes a checkpoint of your current files, so a restore can itself be reverted. Files created after the checkpoint are left untouched.
+Before writing anything, ship takes a checkpoint of your current files and shows exactly which files go back, so `ship undo` right after a rewind returns to where you were. Files created after the chosen checkpoint are left untouched. `ship checkpoint list` and `ship checkpoint restore <id>` do the same by id.
 
 ## Cleaning up
 

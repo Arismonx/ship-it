@@ -784,6 +784,11 @@ func (d *dryCheckpoints) RestoreFiles(_ context.Context, id string) error {
 	d.r.plan(false, "app.dryrun.restore_checkpoint", "id", short(id))
 	return nil
 }
+
+// Changes reads the store: a rehearsal changes none of it.
+func (d *dryCheckpoints) Changes(ctx context.Context, from, to string) ([]ports.CheckpointChange, error) {
+	return d.store.Changes(ctx, from, to)
+}
 func (d *dryCheckpoints) Remove(_ context.Context, ids []string) error {
 	d.r.plan(false, "app.dryrun.remove_checkpoints", "count", strconv.Itoa(len(ids)))
 	return nil

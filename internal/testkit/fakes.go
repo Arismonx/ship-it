@@ -613,7 +613,9 @@ func HealthyRepository(branch string, modified ...string) FakeGit {
 type FakeCheckpointStore struct {
 	Checkpoints []ports.Checkpoint // newest first
 	Restored    string
-	created     int
+	// ChangesBetween answers Changes, by "from to".
+	ChangesBetween map[string][]ports.CheckpointChange
+	created        int
 }
 
 var _ ports.CheckpointStore = (*FakeCheckpointStore)(nil)
@@ -638,6 +640,11 @@ func (s *FakeCheckpointStore) List(_ context.Context, limit int) ([]ports.Checkp
 func (s *FakeCheckpointStore) RestoreFiles(_ context.Context, id string) error {
 	s.Restored = id
 	return nil
+}
+
+// Changes implements ports.CheckpointStore with ChangesBetween, by "from to".
+func (s *FakeCheckpointStore) Changes(_ context.Context, from, to string) ([]ports.CheckpointChange, error) {
+	return s.ChangesBetween[from+" "+to], nil
 }
 
 // Remove implements ports.CheckpointStore.

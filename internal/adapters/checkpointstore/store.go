@@ -372,6 +372,37 @@ func (s *Store) RestoreFiles(ctx context.Context, id string) error {
 	return nil
 }
 
+// Changes implements ports.CheckpointStore with git diff-tree in the store.
+func (s *Store) Changes(ctx context.Context, from, to string) ([]ports.CheckpointChange, error) {
+	loc, exists, err := s.locate(ctx, false)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, errors.New("checkpointstore: no checkpoint has been taken in this repository")
+	}
+	args := []string{"diff-tree", "-r", "-z", "--no-renames", "--name-status", "--root"}
+	if from != "" {
+		args = append(args[:len(args)-1], from)
+	}
+	out, err := s.Git.RunWithInput(ctx, loc.storeEnv(), nil, append(args, to)...)
+	if err != nil {
+		return nil, err
+	}
+	statuses := map[string]string{"A": ports.ChangeAdded, "M": ports.ChangeModified, "T": ports.ChangeModified, "D": ports.ChangeDeleted}
+	fields := strings.Split(strings.TrimSuffix(string(out), "\x00"), "\x00")
+	var changes []ports.CheckpointChange
+	for i := 0; i+1 < len(fields); i++ {
+		status, ok := statuses[fields[i]]
+		if !ok {
+			continue // with --root and one tree, the first field is the commit id
+		}
+		changes = append(changes, ports.CheckpointChange{Path: fields[i+1], Status: status})
+		i++
+	}
+	return changes, nil
+}
+
 // Remove implements ports.CheckpointStore. Refs are deleted in one
 // transaction, each only if it still names the expected checkpoint, then the
 // objects nothing references any more are pruned from the private store.

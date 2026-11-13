@@ -45,7 +45,11 @@ const (
 	// Roadmap synchronised ROADMAP.md with GitHub (ship roadmap sync);
 	// RoadmapSync holds what it created and changed, FilesBefore the file.
 	Roadmap Kind = "roadmap"
-	Undo    Kind = "undo"
+	// Rewind wrote back the files of a checkpoint (ship rewind, #39);
+	// Checkpoint holds the files as they were before, FilesBefore the files
+	// the rewind recreated, which did not exist then.
+	Rewind Kind = "rewind"
+	Undo   Kind = "undo"
 )
 
 // RoadmapSync records what a roadmap sync did on GitHub, so that undo can
@@ -247,7 +251,7 @@ func Undoable(operations []Operation) []Operation {
 	for _, op := range operations {
 		// A tidy that deleted nothing only switched branch: nothing to undo.
 		tidyWithDeletions := op.Kind == Tidy && len(op.DeletedBranches) > 0
-		if (op.Kind == Deliver || op.Kind == Publish || op.Kind == Fix || op.Kind == Configure || op.Kind == Rename || op.Kind == Roadmap || tidyWithDeletions ||
+		if (op.Kind == Deliver || op.Kind == Publish || op.Kind == Fix || op.Kind == Configure || op.Kind == Rename || op.Kind == Roadmap || op.Kind == Rewind || tidyWithDeletions ||
 			op.Kind == Stack || op.Kind == StackPublish || op.Kind == StackSync) && !undone[op.ID] {
 			undoable = append(undoable, op)
 		}
@@ -411,6 +415,17 @@ func PlanUndo(op Operation, current RepositoryView) ([]Step, error) {
 		}
 		for i := len(op.ConfigChanges) - 1; i >= 0; i-- {
 			steps = append(steps, Step{Kind: RestoreConfig, Config: &op.ConfigChanges[i]})
+		}
+		return steps, nil
+	}
+	if op.Kind == Rewind {
+		// The files as they were, then those the rewind recreated go away.
+		if op.Checkpoint == "" {
+			return nil, fault.New(fault.NothingToUndo, "undo.nothing")
+		}
+		steps := []Step{{Kind: RestoreCheckpoint, Checkpoint: op.Checkpoint}}
+		for _, f := range op.FilesBefore {
+			steps = append(steps, Step{Kind: RestoreFile, File: &f})
 		}
 		return steps, nil
 	}

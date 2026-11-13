@@ -206,6 +206,16 @@ ship checkpoint restore <id> [--dry-run] [--json]
 
 `--label` names the snapshot. `list` shows the 20 most recent. `restore` saves a safety checkpoint first, so a restore can be undone with another restore.
 
+### `ship rewind`
+
+Goes back to a checkpoint without knowing its id: it lists the most recent ones, newest first, each with its label, time, branch and the files changed since the one before (`+` added, `-` deleted), then asks which one.
+
+```text
+ship rewind [<checkpoint or number>] [--limit N] [-y|--yes] [--dry-run] [--json]
+```
+
+Once one is chosen (by its number in the list, or its id), ship takes a checkpoint of the files as they are, then shows exactly the files the rewind writes back, and asks. Files created since the chosen checkpoint stay as they are. `ship undo` right after puts every file back as it was, and removes the files the rewind brought back. Answering no drops that safety checkpoint, since nothing changed. Without a terminal it lists and stops (exit `2`): `ship rewind <id> --yes` rewinds without asking.
+
 ### `ship gc`
 
 Removes old checkpoints and run logs.
@@ -639,10 +649,9 @@ On Windows, a standard user can create a folder under `%ProgramData%`. Until an 
 These commands and features do not exist yet; see the [roadmap](../../ROADMAP.md).
 
 - Automatic atomic commits: split the work into several commits by intent (0.2).
-- `ship watch` and `ship rewind`: checkpoints taken as files change, and a way back to any of them.
+- `ship watch`: checkpoints taken as files change, which `ship rewind` can go back to.
 - `ship explain <code>` and `ship skill install` (see the [roadmap](../../ROADMAP.md) for 0.2).
 - `ship release`: compute the version, write the changelog, create the tag and the GitHub release.
 - `ship login` and `ship logout`: sign in with the GitHub device flow and keep the token in the system keychain.
-- `ship rewind`: go back to any moment of your files, from checkpoints taken while you work (0.2; today, `ship checkpoint restore <id>`).
 - `ship daemon`: run deliveries automatically in the background.
 - An organisation policy read from a private repository, `<org>/ship-policy`.

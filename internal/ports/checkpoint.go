@@ -34,4 +34,21 @@ type CheckpointStore interface {
 	// Remove deletes checkpoints and frees their storage. Unknown ids are
 	// ignored; the other checkpoints keep their ids.
 	Remove(ctx context.Context, ids []string) error
+	// Changes lists the files that differ from checkpoint from to checkpoint
+	// to; from "" compares with nothing (every file of to is added).
+	Changes(ctx context.Context, from, to string) ([]CheckpointChange, error)
 }
+
+// CheckpointChange is one file that differs between two checkpoints.
+type CheckpointChange struct {
+	Path string `json:"path"`
+	// Status is "added", "modified" or "deleted", going from one to the other.
+	Status string `json:"status"`
+}
+
+// Statuses of a CheckpointChange.
+const (
+	ChangeAdded    = "added"
+	ChangeModified = "modified"
+	ChangeDeleted  = "deleted"
+)

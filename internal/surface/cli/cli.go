@@ -144,6 +144,8 @@ func (r runner) dispatch(args []string) int {
 		return r.skillCommand(args[1:])
 	case "uninstall":
 		return r.uninstall(args[1:])
+	case "rewind":
+		return r.rewind(args[1:])
 	case "trace":
 		return r.trace(args[1:])
 	case "bug":
