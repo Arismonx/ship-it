@@ -161,15 +161,52 @@ jobs:
           use_oidc: true
           fail_ci_if_error: false
 
-  extension:
-    name: extension (${{ matrix.os }})
+  # The extension, on two systems, as two jobs rather than a matrix: a matrix
+  # job skipped by its condition keeps the unexpanded name
+  # "extension (${{ matrix.os }})", so the required "extension (ubuntu-latest)"
+  # would never report and every pull request would wait for it.
+  extension-linux:
+    name: extension (ubuntu-latest)
     needs: changes
     if: needs.changes.outputs.extension == 'true'
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: extensions/vscode
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: extensions/vscode/package-lock.json
+      # The binary the contract test talks to: the one of this commit.
+      - name: build ship
+        working-directory: .
+        shell: bash
+        env:
+          EXE: ${{ runner.os == 'Windows' && '.exe' || '' }}
+        run: go build -o "extensions/vscode/out/ship$EXE" ./cmd/ship
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - name: test
+        env:
+          SHIP_BIN: ${{ github.workspace }}/extensions/vscode/out/ship${{ runner.os == 'Windows' && '.exe' || '' }}
+        run: npm test
+  extension-windows:
+    name: extension (windows-latest)
+    needs: changes
+    if: needs.changes.outputs.extension == 'true'
+    runs-on: windows-latest
     timeout-minutes: 15
     permissions:
       contents: read
