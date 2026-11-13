@@ -7,7 +7,7 @@ name: pr-title
 
 on:
   pull_request:
-    types: [opened, edited, synchronize, reopened]
+    types: [opened, edited, synchronize, reopened, labeled, unlabeled]
 
 # Nothing by default; the job asks for what it needs (zizmor: excessive-permissions).
 permissions: {}
@@ -63,3 +63,29 @@ jobs:
         env:
           BODY: ${{ github.event.pull_request.body }}
         run: go run ./tools/authorship
+
+  # A feat, fix, perf or security pull request adds its changelog entry, a
+  # fragment in changelog.d/ (#164), unless it has the changelog/skip label.
+  # The title and labels are untrusted: they go through the environment.
+  changelog:
+    name: changelog
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # the merge base with the target branch
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: check the changelog entry
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: CHANGED="$(git diff --name-only "$BASE...$HEAD")" go run ./tools/releasenotes -check

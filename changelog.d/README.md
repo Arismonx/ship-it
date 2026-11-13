@@ -13,4 +13,4 @@ A pull request that changes what users see adds one file here instead of editing
 - `go run ./tools/releasenotes -pending` shows what the next release will say; a test rejects a fragment it cannot read.
 - At release, `go run ./tools/releasenotes -release <version> <date>` moves the entries into CHANGELOG.md and removes the fragments.
 
-Changes that users do not see (tests, CI, refactoring) need no fragment.
+Changes that users do not see (tests, CI, refactoring) need no fragment. The `changelog` check of every pull request asks for one when the title is `feat`, `fix`, `perf` or `security`; for such a change that users still do not see, a maintainer adds the `changelog/skip` label.

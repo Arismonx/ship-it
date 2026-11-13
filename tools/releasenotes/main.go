@@ -29,6 +29,15 @@ import (
 
 func main() {
 	args := os.Args[1:]
+	// -check reads the pull request from the environment (untrusted input,
+	// never a command line): TITLE, LABELS (comma-separated), CHANGED (the
+	// changed files, one per line).
+	if len(args) == 1 && args[0] == "-check" {
+		if !checkFragment(os.Stdout, os.Getenv("TITLE"), strings.Split(os.Getenv("LABELS"), ","), strings.Fields(os.Getenv("CHANGED"))) {
+			os.Exit(1)
+		}
+		return
+	}
 	if len(args) == 0 || (args[0] == "-release" && len(args) != 3) || (args[0] != "-release" && len(args) != 1) {
 		fmt.Fprintln(os.Stderr, "usage: go run ./tools/releasenotes <version> | -pending | -release <version> <YYYY-MM-DD>")
 		os.Exit(2)
